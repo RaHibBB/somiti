@@ -282,3 +282,9 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - **Notices → "WhatsApp গ্রুপে পাঠান"** on every active notice (bold title, body, link to all notices).
 - Visitors and members never get the composer, so phone numbers stay admin-only (verified: no `wa.me`/phone in the public member page).
 - Existing WhatsApp spots unchanged: receipt after a payment, bulk-receipt buttons, dues reminders, monthly summary to the group.
+
+## Review by Shuvo (admin), 2026-10-04
+
+- **Wrong entry on member ১৪:** Shuvo set ১৪'s shares to 2 from November and took a November payment of ৳১,০০০ (R-0018) by mistake, which made the fund show ৳১৬,০০০ instead of ৳১৫,০০০. On Rahib's instruction R-0018 was **voided** (reason recorded, `voided_by` = Rahib); valid dues are back to ৳১৫,০০০ and the sheet shows it as বাতিল. (Rahib had separately set ১৪ to 2 shares from October, so October now shows ৳৫০০ remaining.)
+- **"There's no delete option":** deleting is deliberately impossible (spec: data is never lost); **বাতিল is the delete**. It was only reachable via আরও → ভুল এন্ট্রি বাতিল, so it is now also: a **"ভুল হলে বাতিল"** button on every valid payment on the member's account page (admins), and **"ভুল হয়েছে? এখনই বাতিল করুন"** right on the take-payment success screen. The confirmation text explains that this is the delete, kept with a reason.
+- **PDF authorisation:** every print page now ends with an authorisation block. If an **admin** downloads it: "ডাউনলোড ও প্রত্যয়ন করেছেন: <name> (অ্যাডমিন, সদস্য নং …)", the time, and a signature line under their name. For members/visitors the **default** is "সমিতির পক্ষে স্বাক্ষর" with a blank line and a note to get any admin's signature for certification. (The download itself is not written to the audit log — reading never writes.)

@@ -4,6 +4,7 @@ import type { MemberLedger } from "@/lib/data"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { MonthStatus } from "@/lib/ledger"
+import { VoidButton } from "@/app/(app)/admin/void/void-button"
 
 export const STATUS_LABEL: Record<MonthStatus, string> = {
   paid: "পরিশোধিত",
@@ -41,10 +42,13 @@ export function MemberStatement({
   entry,
   sharePrice,
   showUpcoming = 3,
+  canVoid = false,
 }: {
   entry: MemberLedger
   sharePrice: number
   showUpcoming?: number
+  /** Admins get a "বাতিল" button on each valid payment (a wrong entry is voided, never deleted). */
+  canVoid?: boolean
 }) {
   const { member, lines } = entry
   // Months already due, plus the next few upcoming ones.
@@ -108,6 +112,11 @@ export function MemberStatement({
                     {p.trxId ? ` · ${p.trxId}` : ""}
                   </p>
                   {isVoid ? <p className="text-sm font-medium text-destructive">বাতিল — {p.voidReason}</p> : null}
+                  {canVoid && !isVoid ? (
+                    <div className="mt-1 flex justify-end">
+                      <VoidButton kind="payment" id={p.id} label={`${receiptLabel(p.receiptNo)} (${monthLabel(p.forMonth)}, ${taka(p.amount)})`} />
+                    </div>
+                  ) : null}
                 </li>
               )
             })}

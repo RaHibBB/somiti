@@ -13,14 +13,14 @@ export function VoidButton({ kind, id, label }: { kind: "payment" | "transaction
   if (!open) {
     return (
       <Button variant="destructive" size="sm" onClick={() => setOpen(true)}>
-        বাতিল
+        ভুল হলে বাতিল
       </Button>
     )
   }
   return (
     <form action={action} className="mt-2 w-full space-y-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
       <p className="text-sm">
-        <b>{label}</b> বাতিল করবেন? টাকা হিসাব থেকে বাদ যাবে, কিন্তু রেকর্ড &quot;বাতিল&quot; হিসেবে থেকে যাবে।
+        <b>{label}</b> বাতিল করবেন? এটাই &quot;মুছে ফেলা&quot;: টাকা হিসাব থেকে বাদ যাবে, তবে রেকর্ডটি কারণসহ &quot;বাতিল&quot; হিসেবে থেকে যাবে, যাতে পরে সবাই বুঝতে পারে কী হয়েছিল।
       </p>
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="id" value={id} />

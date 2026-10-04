@@ -11,6 +11,7 @@ import { fromBn, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/l
 import { receiptMessage, waLink } from "@/lib/whatsapp"
 import { cn } from "@/lib/utils"
 import { takePaymentAction, type TakePaymentResult } from "./actions"
+import { VoidButton } from "../void/void-button"
 
 export type PayMember = {
   id: number
@@ -148,6 +149,19 @@ export function PayForm({ members, today, preselectId }: { members: PayMember[];
         <Button size="xl" variant="outline" onClick={reset}>
           <RotateCcw className="size-5" /> আরেকটি জমা নিন
         </Button>
+        <details className="rounded-xl border bg-white px-3 py-2">
+          <summary className="min-h-10 cursor-pointer py-2 text-base text-muted-foreground">ভুল হয়েছে? এখনই বাতিল করুন</summary>
+          <ul className="space-y-2 pb-2">
+            {result.receipts.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm">
+                  {receiptLabel(r.receiptNo)} · {monthLabel(r.forMonth)} · {taka(r.amount)}
+                </span>
+                <VoidButton kind="payment" id={r.id} label={`${receiptLabel(r.receiptNo)} (${member.name}, ${taka(r.amount)})`} />
+              </li>
+            ))}
+          </ul>
+        </details>
       </div>
     )
   }

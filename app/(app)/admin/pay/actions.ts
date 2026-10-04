@@ -27,7 +27,7 @@ const schema = z.object({
 })
 
 export type TakePaymentResult = {
-  receipts: { receiptNo: number; forMonth: string; amount: number }[]
+  receipts: { id: number; receiptNo: number; forMonth: string; amount: number }[]
   paidOn: string
   dueAfter: number
 }
@@ -41,7 +41,7 @@ export async function takePaymentAction(input: z.input<typeof schema>) {
     const dueAfter = snap.members.find((m) => m.member.id === data.memberId)?.due ?? 0
     revalidatePath("/", "layout")
     return {
-      receipts: rows.map((r) => ({ receiptNo: r.receiptNo, forMonth: r.forMonth, amount: r.amount })),
+      receipts: rows.map((r) => ({ id: r.id, receiptNo: r.receiptNo, forMonth: r.forMonth, amount: r.amount })),
       paidOn: data.paidOn,
       dueAfter,
     }

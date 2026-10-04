@@ -79,7 +79,7 @@ export default async function MemberAccountPage({ params }: PageProps<"/members/
         </details>
       ) : null}
 
-      <MemberStatement entry={entry} sharePrice={snap.settings.sharePrice} />
+      <MemberStatement entry={entry} sharePrice={snap.settings.sharePrice} canVoid={adminUi} />
     </>
   )
 }
