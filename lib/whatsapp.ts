@@ -46,3 +46,34 @@ export function reminderMessage(input: { name: string; due: number; months: stri
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ].join("\n")
 }
+
+/**
+ * One-tap monthly summary for the samiti's WhatsApp group (sent via wa.me, so the admin
+ * picks the group). Lists who still owes — accounts are transparent to all members.
+ */
+export function monthlyGroupMessage(input: {
+  month: string
+  paidCount: number
+  activeCount: number
+  collected: number
+  expected: number
+  owing: { no: number; name: string; due: number }[]
+  fundTotal: number
+  cash: number
+  invested: number
+  reportUrl: string
+}): string {
+  const owingLines = input.owing.length
+    ? [`বকেয়া আছে ${toBn(input.owing.length)} জনের:`, ...input.owing.map((o) => `• ${toBn(o.no)}. ${o.name} — ${taka(o.due)}`)]
+    : ["কারো কোনো বকেয়া নেই। সবাইকে ধন্যবাদ!"]
+  return [
+    `${SAMITI_NAME}`,
+    `${monthLabel(input.month)} — মাসিক হিসাব`,
+    "",
+    `চাঁদা আদায়: ${taka(input.collected)} / ${taka(input.expected)} (${toBn(input.paidCount)}/${toBn(input.activeCount)} জন পুরো দিয়েছেন)`,
+    ...owingLines,
+    "",
+    `সমিতির তহবিল: ${taka(input.fundTotal)} (নগদ ${taka(input.cash)}, বিনিয়োগ ${taka(input.invested)})`,
+    `বিস্তারিত রিপোর্ট: ${input.reportUrl}`,
+  ].join("\n")
+}

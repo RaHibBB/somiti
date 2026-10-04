@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   User,
   Users,
+  Smartphone,
   UserCog,
   Ban,
   ArrowLeftRight,
@@ -31,6 +32,7 @@ type Item = { href: string; label: string; icon: React.ComponentType<{ className
 
 const MEMBER_LINKS: Item[] = [
   { href: "/me", label: "আমার হিসাব", icon: User },
+  { href: "/report", label: "বিকাশ/নগদে জমা জানান", icon: Smartphone },
   { href: "/proposals", label: "প্রস্তাব ও ভোট", icon: Vote },
   { href: "/notices", label: "নোটিশ", icon: Megaphone },
   { href: "/profit", label: "বার্ষিক মুনাফা বণ্টন", icon: PiggyBank },
@@ -44,6 +46,7 @@ const MEMBER_LINKS: Item[] = [
 const ADMIN_LINKS: Item[] = [
   { href: "/admin/pay", label: "জমা নিন", icon: HandCoins },
   { href: "/admin/pay/bulk", label: "একসাথে অনেকের জমা (সভার দিন)", icon: Users },
+  { href: "/admin/reports", label: "বিকাশ/নগদের জানানো জমা যাচাই", icon: Smartphone },
   { href: "/admin/dues", label: "বকেয়া ও রিমাইন্ডার", icon: ShieldAlert },
   { href: "/admin/members", label: "সদস্য ব্যবস্থাপনা", icon: UserCog },
   { href: "/admin/transactions/new", label: "আয়/ব্যয়/বিনিয়োগ যোগ করুন", icon: ClipboardList },

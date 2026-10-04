@@ -2,10 +2,10 @@
 
 import bcrypt from "bcryptjs"
 import { eq, sql } from "drizzle-orm"
-import { headers } from "next/headers"
 import { after } from "next/server"
 import { redirect } from "next/navigation"
 import { z } from "zod"
+import { appUrl } from "@/lib/app-url"
 import { writeAudit } from "@/lib/audit"
 import { getDb } from "@/lib/db"
 import { members } from "@/lib/db/schema"
@@ -108,14 +108,6 @@ export async function changePasswordAction(_prev: FormState, formData: FormData)
   // Other devices are logged out (session_version bumped); keep this one signed in.
   await setSessionCookie(updated)
   return { ok: true }
-}
-
-/** Base URL for links in emails. Never trusts the Host header in production. */
-async function appUrl(): Promise<string> {
-  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "")
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  const h = await headers()
-  return `http://${h.get("host") ?? "localhost:3000"}`
 }
 
 export async function forgotPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {

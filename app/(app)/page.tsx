@@ -6,10 +6,12 @@ import { requireMember } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot, loadFund, loadLatestNotices } from "@/lib/data"
 import { getDb } from "@/lib/db"
-import { proposals, votes } from "@/lib/db/schema"
+import { paymentReports, proposals, votes } from "@/lib/db/schema"
 import { closeExpiredProposals } from "@/lib/services/proposals"
-import { and, eq, notExists } from "drizzle-orm"
-import { CalendarClock, HandCoins, Plus, UserPlus, Users, Vote } from "lucide-react"
+import { and, count, eq, notExists } from "drizzle-orm"
+import { CalendarClock, HandCoins, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
+import { appUrl } from "@/lib/app-url"
+import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
 import { formatDate, monthLabel, taka, toBn } from "@/lib/format"
 import { dueReminder, monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
@@ -19,7 +21,7 @@ export default async function DashboardPage() {
   const adminUi = await showAdminUi(me)
   const db = getDb()
   await closeExpiredProposals(db)
-  const [snap, fund, notices, pendingVotes] = await Promise.all([
+  const [snap, fund, notices, pendingVotes, [{ n: pendingReportCount }]] = await Promise.all([
     getSnapshot(),
     loadFund(),
     loadLatestNotices(3),
@@ -37,6 +39,7 @@ export default async function DashboardPage() {
           ),
         ),
       ),
+    db.select({ n: count() }).from(paymentReports).where(eq(paymentReports.status, "pending")),
   ])
   const entry = snap.members.find((m) => m.member.id === me.id)!
   const thisMonth = monthOf(snap.today)
@@ -50,6 +53,23 @@ export default async function DashboardPage() {
   const owingCount = active.filter((m) => m.due > 0).length
   const todays = snap.members.flatMap((m) => m.payments).filter((p) => p.status === "valid" && p.paidOn === snap.today)
   const todayTotal = todays.reduce((s, p) => s + p.amount, 0)
+  const groupMsg = adminUi
+    ? monthlyGroupMessage({
+        month: thisMonth,
+        paidCount,
+        activeCount: active.length,
+        collected: monthPaid,
+        expected: monthExpected,
+        owing: active
+          .filter((m) => m.due > 0)
+          .sort((a, b) => b.due - a.due)
+          .map((m) => ({ no: m.member.memberNo, name: m.member.nameBn, due: m.due })),
+        fundTotal: fund.total,
+        cash: fund.cash,
+        invested: fund.invested,
+        reportUrl: `${await appUrl()}/print/month/${thisMonth.slice(0, 7)}`,
+      })
+    : ""
   const current = entry.lines.find((l) => l.month === thisMonth)
   const investedPct = fund.total > 0 ? 100 - fund.cashPct : 0
 
@@ -86,6 +106,20 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
+      {adminUi && pendingReportCount > 0 ? (
+        <Link
+          href="/admin/reports"
+          className="flex items-center gap-3 rounded-2xl border-2 border-[#e2136e] bg-pink-50 p-4 text-[#8f0c46]"
+        >
+          <Smartphone className="size-7 shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm">বিকাশ/নগদের জানানো জমা</span>
+            <span className="block text-lg font-bold">{toBn(pendingReportCount)}টি যাচাই বাকি</span>
+          </span>
+          <ChevronRight className="size-5" />
+        </Link>
+      ) : null}
+
       {adminUi ? (
         <section className="space-y-3 rounded-2xl border bg-white p-4">
           <div className="flex items-baseline justify-between">
@@ -112,6 +146,14 @@ export default async function DashboardPage() {
               </p>
             </Link>
           </div>
+          <a
+            href={waLink(null, groupMsg)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white active:opacity-90"
+          >
+            <MessageCircle className="size-5" /> মাসিক হিসাব WhatsApp গ্রুপে পাঠান
+          </a>
         </section>
       ) : null}
 
@@ -169,6 +211,12 @@ export default async function DashboardPage() {
             <span className={cn("rounded-md px-3 py-1 text-sm", STATUS_CLASS[current.status])}>{STATUS_LABEL[current.status]}</span>
           </div>
         ) : null}
+        <Link
+          href="/report"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-[#e2136e] bg-white px-3 text-base font-medium text-[#b10f57] active:bg-pink-50"
+        >
+          <Smartphone className="size-5" /> বিকাশ/নগদে দিয়েছি? এখানে জানান
+        </Link>
         <Link href="/me" className="flex h-11 items-center justify-center gap-1 text-base text-brand-navy">
           আমার পুরো হিসাব দেখুন <ChevronRight className="size-5" />
         </Link>

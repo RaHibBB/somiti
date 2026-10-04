@@ -25,3 +25,25 @@ describe("whatsapp links", () => {
     expect(msg).toContain("৳১,৫০০")
   })
 })
+
+describe("monthly group message", () => {
+  it("summarises collection, dues and the fund with a report link", async () => {
+    const { monthlyGroupMessage } = await import("@/lib/whatsapp")
+    const msg = monthlyGroupMessage({
+      month: "2026-10-01",
+      paidCount: 30,
+      activeCount: 32,
+      collected: 15000,
+      expected: 16500,
+      owing: [{ no: 5, name: "করিম", due: 1000 }],
+      fundTotal: 20000,
+      cash: 20000,
+      invested: 0,
+      reportUrl: "https://example.test/print/month/2026-10",
+    })
+    expect(msg).toContain("অক্টোবর ২০২৬ — মাসিক হিসাব")
+    expect(msg).toContain("৳১৫,০০০ / ৳১৬,৫০০ (৩০/৩২ জন")
+    expect(msg).toContain("• ৫. করিম — ৳১,০০০")
+    expect(msg).toContain("https://example.test/print/month/2026-10")
+  })
+})

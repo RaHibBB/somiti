@@ -35,6 +35,7 @@ export const txnTypeEnum = pgEnum("txn_type", [
 ])
 export const noticeStatusEnum = pgEnum("notice_status", ["active", "archived"])
 export const outboxStatusEnum = pgEnum("outbox_status", ["pending", "done", "failed"])
+export const reportStatusEnum = pgEnum("report_status", ["pending", "approved", "rejected"])
 // Phase 2
 export const proposalStatusEnum = pgEnum("proposal_status", ["draft", "open", "passed", "rejected", "invalid"])
 export const voteChoiceEnum = pgEnum("vote_choice", ["yes", "no"])
@@ -234,6 +235,39 @@ export const passwordResets = pgTable(
   (t) => [index("password_resets_member_idx").on(t.memberId, t.createdAt)],
 )
 
+// ── Member-reported mobile payments (bKash/Nagad/…), approved by an admin ─────
+// The member says "I sent ৳X for these months, trx id Y"; an admin checks the wallet and
+// approves (→ real payment rows, receipts) or rejects with a reason.
+export const paymentReports = pgTable(
+  "payment_reports",
+  {
+    id: serial("id").primaryKey(),
+    memberId: integer("member_id")
+      .notNull()
+      .references(() => members.id),
+    items: jsonb("items").$type<{ forMonth: string; amount: number }[]>().notNull(),
+    amount: integer("amount").notNull(),
+    method: paymentMethodEnum("method").notNull(),
+    trxId: text("trx_id").notNull(),
+    paidOn: date("paid_on", { mode: "string" }).notNull(),
+    note: text("note"),
+    status: reportStatusEnum("status").notNull().default("pending"),
+    reviewedBy: integer("reviewed_by").references(() => members.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    rejectReason: text("reject_reason"),
+    paymentIds: jsonb("payment_ids").$type<number[]>(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("payment_reports_amount_positive", sql`${t.amount} > 0`),
+    check("payment_reports_not_cash", sql`${t.method} <> 'cash'`),
+    check("payment_reports_trx_present", sql`length(trim(${t.trxId})) >= 4`),
+    // The same transaction id can't be reported twice (unless an earlier report was rejected).
+    uniqueIndex("payment_reports_trx_once").on(sql`upper(trim(${t.trxId}))`).where(sql`status <> 'rejected'`),
+    index("payment_reports_status_idx").on(t.status, t.createdAt),
+  ],
+)
+
 // ── Google Sheet outbox ──────────────────────────────────────────────────────
 export const sheetOutbox = pgTable(
   "sheet_outbox",
@@ -317,3 +351,4 @@ export type ShareHistoryRow = typeof shareHistory.$inferSelect
 export type Settings = typeof settings.$inferSelect
 export type AuditEntry = typeof auditLog.$inferSelect
 export type Notice = typeof notices.$inferSelect
+export type PaymentReport = typeof paymentReports.$inferSelect
