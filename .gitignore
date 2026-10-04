@@ -60,3 +60,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# logo exports for sharing (WhatsApp/Facebook profile pictures); public/logo.* is the committed copy
+/exports

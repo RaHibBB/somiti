@@ -1,37 +1,35 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
+import { LogoSvg } from "@/lib/logo-art"
 
 /**
- * Letterhead image from public/letterhead-header.png (supplied by the samiti).
- * Falls back to a text header until the image is added.
+ * Printed documents start with the samiti's letterhead. If the samiti adds its own header image
+ * at public/letterhead-header.png it is used; until then (and while it loads) a header with the
+ * logo and the samiti's name is shown.
  */
 export function Letterhead() {
-  const [missing, setMissing] = useState(false)
-  const img = useRef<HTMLImageElement>(null)
+  const [hasImage, setHasImage] = useState(false)
 
-  // The image may fail before hydration, in which case onError never reaches React.
   useEffect(() => {
-    const el = img.current
-    if (el && el.complete && el.naturalWidth === 0) setMissing(true)
+    const img = new Image()
+    img.onload = () => setHasImage(true)
+    img.src = "/letterhead-header.png"
   }, [])
 
-  if (missing) {
+  if (hasImage) {
     return (
-      <div className="border-b-2 border-[#1a4059] pb-2 text-center">
-        <p className="text-[15pt] font-bold text-[#1a4059]">পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি</p>
-        <p className="text-[9.5pt]">মীরসরাই, চট্টগ্রাম · প্রতিষ্ঠা ২০২৬</p>
-      </div>
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/letterhead-header.png" alt="পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি" className="block w-full" />
     )
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      ref={img}
-      src="/letterhead-header.png"
-      alt="পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি"
-      className="block w-full"
-      onError={() => setMissing(true)}
-    />
+    <div className="flex items-center justify-center gap-4 border-b-2 border-[#1a4059] pb-3">
+      <LogoSvg size={64} title="পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি" />
+      <div className="text-left">
+        <p className="text-[16pt] leading-tight font-bold text-[#1a4059]">পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি</p>
+        <p className="text-[9.5pt]">মীরসরাই, চট্টগ্রাম · প্রতিষ্ঠা ২০২৬</p>
+      </div>
+    </div>
   )
 }

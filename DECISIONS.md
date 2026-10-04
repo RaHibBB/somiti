@@ -324,3 +324,10 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 
 - **WhatsApp group summary** no longer says "কারো কোনো বকেয়া নেই" while it also lists members who haven't paid this month. With nobody overdue but some unpaid this month it shows only the "এই মাসের চাঁদা এখনো দেননি" list; "সবাই চাঁদা পরিশোধ করেছেন" appears only when nobody owes anything.
 - **Payment receipt message** says "এই মাসের আরও ৳X বাকি আছে।" after a partial payment instead of "কোনো বকেয়া নেই" (the pay screen also shows "এই মাস বাকি ৳X").
+
+## Logo (made by Claude at the samiti's request, 2026-10-04)
+
+- **Design:** a navy round badge with a gold ring and eight gold beads (eight members → also the points of the faint eight-pointed star behind), and in the middle a **stack of three coins with a sprout growing out of it** — savings that grow together. Colours: the letterhead navy `#1d3f57` and the logo green. Drawn once as flat SVG shapes in `lib/logo-art.tsx` (no fonts, no gradients), so it can't break and works at 34 px or on a poster.
+- **Used in:** the header (phones), the laptop sidebar, the home-page hero, the login page, the PDF letterhead (logo + samiti name; a real `public/letterhead-header.png` still overrides it if one is ever added), and the install/tab icons (`lib/app-icon.tsx`: logo centred on a navy tile). The logo is inline SVG, so no image request and no broken-image flash; the earlier `public/logo.png` probing was removed.
+- **Files:** `public/logo.svg` and `public/logo.png` (512 px, transparent) are committed; `scripts/build-logo.tsx` (`pnpm tsx scripts/build-logo.tsx`) regenerates them plus `exports/logo-1024.png` and `exports/logo-square-1024.png` (navy square for WhatsApp/Facebook profile pictures; `exports/` is git-ignored). `sharp` was added as a dev dependency for this.
+- If the samiti later has an official logo, replace the drawing in `lib/logo-art.tsx` (or swap the component's content) and re-run the script — every place above follows.
