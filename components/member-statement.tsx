@@ -58,7 +58,7 @@ export function MemberStatement({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-4">
         <StatCard label="শেয়ার" value={`${toBn(entry.sharesNow)} টি (মাসে ${taka(entry.sharesNow * sharePrice)})`} />
         <StatCard label="মোট জমা" value={taka(entry.paid)} tone="good" />
         <StatCard label="এ পর্যন্ত দেয়" value={taka(entry.expected)} />
@@ -72,6 +72,7 @@ export function MemberStatement({
         <FileDown className="size-5" /> PDF ডাউনলোড
       </Link>
 
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
       <section className="space-y-2">
         <h2 className="text-lg font-semibold text-brand-navy">মাসভিত্তিক হিসাব</h2>
         <ul className="divide-y overflow-hidden rounded-xl border bg-white">
@@ -123,6 +124,7 @@ export function MemberStatement({
           </ul>
         )}
       </section>
+      </div>
     </div>
   )
 }

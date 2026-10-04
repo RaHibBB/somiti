@@ -161,7 +161,13 @@ export function PayForm({
 
   // ── Success screen ──
   if (result && member) {
-    const msg = receiptMessage({ name: member.name, receipts: result.receipts, paidOn: result.paidOn, dueAfter: result.dueAfter })
+    const msg = receiptMessage({
+      name: member.name,
+      receipts: result.receipts,
+      paidOn: result.paidOn,
+      dueAfter: result.dueAfter,
+      currentOpenAfter: result.currentOpenAfter,
+    })
     return (
       <div className="space-y-5">
         <div className="rounded-2xl border-2 border-green-600 bg-green-50 p-5 text-center">
@@ -184,6 +190,7 @@ export function PayForm({
           </ul>
           <p className="mt-2 text-sm text-muted-foreground">
             বর্তমান বকেয়া: <span className={result.dueAfter > 0 ? "font-semibold text-destructive" : ""}>{taka(result.dueAfter)}</span>
+            {result.currentOpenAfter > 0 ? <span className="text-amber-700"> · এই মাস বাকি {taka(result.currentOpenAfter)}</span> : null}
           </p>
         </div>
         <a

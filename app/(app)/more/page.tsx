@@ -1,64 +1,25 @@
 import Link from "next/link"
-import {
-  BookOpen,
-  ChevronRight,
-  ClipboardList,
-  Download,
-  FileClock,
-  HandCoins,
-  KeyRound,
-  LogOut,
-  LogIn,
-  Receipt,
-  ShieldAlert,
-  User,
-  Users,
-  Smartphone,
-  UserCog,
-  Ban,
-  ArrowLeftRight,
-  FileText,
-  Vote,
-  Megaphone,
-  PiggyBank,
-  FilePlus,
-} from "lucide-react"
+import { ArrowLeftRight, ChevronRight, LogIn, LogOut } from "lucide-react"
+import { ADMIN_NAV, MAIN_NAV, MY_NAV, PERSONAL_HREFS, REPORT_NAV, type NavItem } from "@/components/layout/nav-items"
 import { PageTitle } from "@/components/layout/page-title"
 import { logoutAction } from "@/lib/auth/actions"
 import { getViewer } from "@/lib/auth/session"
 import { setViewAction } from "@/lib/auth/view-actions"
 import { showAdminUi } from "@/lib/auth/view"
 
-type Item = { href: string; label: string; icon: React.ComponentType<{ className?: string }> }
+type Item = NavItem
 
+// Phone menu: the bottom bar has the first five; everything else lives here.
 const MEMBER_LINKS: Item[] = [
-  { href: "/me", label: "আমার হিসাব", icon: User },
-  { href: "/report", label: "বিকাশ/নগদে জমা জানান", icon: Smartphone },
-  { href: "/proposals", label: "প্রস্তাব ও ভোট", icon: Vote },
-  { href: "/notices", label: "নোটিশ", icon: Megaphone },
-  { href: "/profit", label: "বার্ষিক মুনাফা বণ্টন", icon: PiggyBank },
-  { href: "/transactions", label: "আয়-ব্যয় ও বিনিয়োগ", icon: Receipt },
-  { href: "/rules", label: "সমিতির নিয়মাবলি", icon: BookOpen },
-  { href: "/print/month", label: "মাসিক রিপোর্ট (PDF)", icon: FileText },
-  { href: "/print/ledger", label: "পূর্ণ জমা খাতা (PDF)", icon: FileText },
-  { href: "/settings/pin", label: "পাসওয়ার্ড ও ইমেইল", icon: KeyRound },
+  ...MY_NAV.filter((i) => i.href !== "/settings/pin"),
+  ...MAIN_NAV.filter((i) => ["/proposals", "/notices", "/profit", "/transactions", "/rules"].includes(i.href)),
+  ...REPORT_NAV,
+  ...MY_NAV.filter((i) => i.href === "/settings/pin"),
 ]
 
-const PERSONAL = new Set(["/me", "/report", "/settings/pin"])
+const PERSONAL = PERSONAL_HREFS
 
-const ADMIN_LINKS: Item[] = [
-  { href: "/admin/pay", label: "জমা নিন", icon: HandCoins },
-  { href: "/admin/pay/bulk", label: "একসাথে অনেকের জমা (সভার দিন)", icon: Users },
-  { href: "/admin/reports", label: "বিকাশ/নগদের জানানো জমা যাচাই", icon: Smartphone },
-  { href: "/admin/dues", label: "বকেয়া ও রিমাইন্ডার", icon: ShieldAlert },
-  { href: "/admin/members", label: "সদস্য ব্যবস্থাপনা", icon: UserCog },
-  { href: "/admin/transactions/new", label: "আয়/ব্যয়/বিনিয়োগ যোগ করুন", icon: ClipboardList },
-  { href: "/admin/proposals/new", label: "নতুন প্রস্তাব (ভোট)", icon: FilePlus },
-  { href: "/admin/notices", label: "নোটিশ লিখুন", icon: Megaphone },
-  { href: "/admin/void", label: "ভুল এন্ট্রি বাতিল", icon: Ban },
-  { href: "/admin/audit", label: "অডিট লগ", icon: FileClock },
-  { href: "/admin/export", label: "CSV ডাউনলোড", icon: Download },
-]
+const ADMIN_LINKS: Item[] = ADMIN_NAV
 
 function LinkList({ items }: { items: Item[] }) {
   return (

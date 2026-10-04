@@ -20,7 +20,13 @@ export function receiptMessage(input: {
   receipts: { receiptNo: number; forMonth: string; amount: number }[]
   paidOn: string
   dueAfter: number
+  /** This month's amount still unpaid (inside the 1st–10th window), after this payment. */
+  currentOpenAfter?: number
 }): string {
+  const after: string[] = []
+  if (input.dueAfter > 0) after.push(`বর্তমান বকেয়া: ${taka(input.dueAfter)}`)
+  if ((input.currentOpenAfter ?? 0) > 0) after.push(`এই মাসের আরও ${taka(input.currentOpenAfter ?? 0)} বাকি আছে।`)
+  if (after.length === 0) after.push("আপনার কোনো বকেয়া নেই।")
   const lines = input.receipts.map((r) => `• ${monthLabel(r.forMonth)} — ${taka(r.amount)} (রসিদ ${receiptLabel(r.receiptNo)})`)
   const total = input.receipts.reduce((s, r) => s + r.amount, 0)
   return [
@@ -29,7 +35,7 @@ export function receiptMessage(input: {
     ...lines,
     input.receipts.length > 1 ? `মোট: ${taka(total)}` : null,
     `তারিখ: ${formatDate(input.paidOn)}`,
-    input.dueAfter > 0 ? `বর্তমান বকেয়া: ${taka(input.dueAfter)}` : `আপনার কোনো বকেয়া নেই।`,
+    ...after,
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ]
     .filter(Boolean)
@@ -65,9 +71,13 @@ export function monthlyGroupMessage(input: {
   invested: number
   reportUrl: string
 }): string {
+  // Never say "no dues" while some members haven't paid this month — that reads as a contradiction.
+  const nothingPending = input.owing.length === 0 && !input.notYet?.length
   const owingLines = input.owing.length
     ? [`বকেয়া আছে ${toBn(input.owing.length)} জনের:`, ...input.owing.map((o) => `• ${toBn(o.no)}. ${o.name} — ${taka(o.due)}`)]
-    : ["কারো কোনো বকেয়া নেই। সবাইকে ধন্যবাদ!"]
+    : nothingPending
+      ? ["সবাই চাঁদা পরিশোধ করেছেন। সবাইকে ধন্যবাদ!"]
+      : []
   return [
     `${SAMITI_NAME}`,
     `${monthLabel(input.month)} — মাসিক হিসাব`,

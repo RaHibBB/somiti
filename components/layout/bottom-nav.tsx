@@ -43,7 +43,7 @@ export function BottomNav({ mode }: { mode: "admin" | "member" | "guest" }) {
   const items = mode === "admin" ? ADMIN_ITEMS : mode === "guest" ? GUEST_ITEMS : MEMBER_ITEMS
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-white pb-[env(safe-area-inset-bottom)] print:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t bg-white pb-[env(safe-area-inset-bottom)] print:hidden lg:hidden"
       aria-label="প্রধান মেনু"
     >
       <ul className="mx-auto grid max-w-2xl grid-cols-5">

@@ -85,3 +85,25 @@ describe("this month not yet paid", () => {
     expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10 })).toContain("অক্টোবর ২০২৬-এর চাঁদা ৳৫০০ এখনো জমা হয়নি")
   })
 })
+
+describe("no contradictory 'no dues' lines", () => {
+  const base = { month: "2026-10-01", paidCount: 17, activeCount: 32, collected: 15500, expected: 27500, fundTotal: 15500, cash: 15500, invested: 0, reportUrl: "https://x.test" }
+  it("group message: nobody overdue but 15 haven't paid → no 'no dues' line", async () => {
+    const { monthlyGroupMessage } = await import("@/lib/whatsapp")
+    const msg = monthlyGroupMessage({ ...base, owing: [], notYet: [{ no: 1, name: "শরফুদ্দিন" }, { no: 2, name: "ইদ্রিস মনি" }] })
+    expect(msg).not.toContain("কোনো বকেয়া নেই")
+    expect(msg).toContain("এই মাসের চাঁদা এখনো দেননি (২ জন): ১. শরফুদ্দিন, ২. ইদ্রিস মনি")
+  })
+  it("group message: everyone paid → thanks", async () => {
+    const { monthlyGroupMessage } = await import("@/lib/whatsapp")
+    expect(monthlyGroupMessage({ ...base, owing: [], notYet: [] })).toContain("সবাই চাঁদা পরিশোধ করেছেন")
+  })
+  it("receipt: a partial payment says how much of this month is left", async () => {
+    const { receiptMessage } = await import("@/lib/whatsapp")
+    const r = { receiptNo: 5, forMonth: "2026-10-01", amount: 500 }
+    const partial = receiptMessage({ name: "ক", receipts: [r], paidOn: "2026-10-04", dueAfter: 0, currentOpenAfter: 500 })
+    expect(partial).toContain("এই মাসের আরও ৳৫০০ বাকি আছে।")
+    expect(partial).not.toContain("কোনো বকেয়া নেই")
+    expect(receiptMessage({ name: "ক", receipts: [r], paidOn: "2026-10-04", dueAfter: 0, currentOpenAfter: 0 })).toContain("কোনো বকেয়া নেই")
+  })
+})

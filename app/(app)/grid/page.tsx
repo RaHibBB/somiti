@@ -35,7 +35,7 @@ export default async function GridPage() {
       </div>
       <p className="text-xs text-muted-foreground">ডানে-বামে সরিয়ে সব মাস দেখুন। ঘরে চাপ দিলে বিস্তারিত দেখাবে।</p>
 
-      <div id="grid-scroll" className="-mx-4 overflow-x-auto border-y bg-white">
+      <div id="grid-scroll" className="-mx-4 overflow-x-auto border-y bg-white lg:mx-0 lg:rounded-xl lg:border">
         <table className="border-separate border-spacing-0 text-sm">
           <thead>
             <tr>

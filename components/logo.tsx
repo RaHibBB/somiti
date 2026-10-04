@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 
 /** The samiti's coin-stack mark, drawn as SVG. Shown until a real logo file is added. */
 export function CoinMark({ size = 40, className }: { size?: number; className?: string }) {
@@ -14,32 +14,48 @@ export function CoinMark({ size = 40, className }: { size?: number; className?: 
   )
 }
 
+const LOGO_SRC = "/logo.png"
+let probe: Promise<boolean> | null = null
+
+/** Does public/logo.png exist? Checked once per page load, by actually loading the image. */
+function logoExists(): Promise<boolean> {
+  probe ??= new Promise<boolean>((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve(true)
+    img.onerror = () => resolve(false)
+    img.src = LOGO_SRC
+  })
+  return probe
+}
+
 /**
  * The samiti's logo. Drop the real logo at `public/logo.png` and it appears everywhere
- * (header, login, home); until then the coin mark is shown.
+ * (header, sidebar, login, home). The coin mark is shown first and until then, so there is
+ * never a broken-image icon while the page loads.
  */
 export function Logo({ size = 40, className }: { size?: number; className?: string }) {
-  const [missing, setMissing] = useState(false)
-  const img = useRef<HTMLImageElement>(null)
+  const [available, setAvailable] = useState(false)
 
-  // The image can fail before hydration, in which case onError never reaches React.
   useEffect(() => {
-    const el = img.current
-    if (el && el.complete && el.naturalWidth === 0) setMissing(true)
+    let alive = true
+    void logoExists().then((ok) => {
+      if (alive) setAvailable(ok)
+    })
+    return () => {
+      alive = false
+    }
   }, [])
 
-  if (missing) return <CoinMark size={size} className={className} />
+  if (!available) return <CoinMark size={size} className={className} />
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      ref={img}
-      src="/logo.png"
+      src={LOGO_SRC}
       alt="পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি"
       width={size}
       height={size}
       className={className}
       style={{ width: size, height: size, objectFit: "contain" }}
-      onError={() => setMissing(true)}
     />
   )
 }

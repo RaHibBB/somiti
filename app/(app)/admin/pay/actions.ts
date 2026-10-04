@@ -30,6 +30,7 @@ export type TakePaymentResult = {
   receipts: { id: number; receiptNo: number; forMonth: string; amount: number }[]
   paidOn: string
   dueAfter: number
+  currentOpenAfter: number
 }
 
 export async function takePaymentAction(input: z.input<typeof schema>) {
@@ -38,12 +39,15 @@ export async function takePaymentAction(input: z.input<typeof schema>) {
     const db = getDb()
     const rows = await recordPayments(db, admin.id, data)
     const snap = await loadSnapshot(db)
-    const dueAfter = snap.members.find((m) => m.member.id === data.memberId)?.due ?? 0
+    const after = snap.members.find((m) => m.member.id === data.memberId)
+    const dueAfter = after?.due ?? 0
+    const currentOpenAfter = after?.currentOpen ?? 0
     revalidatePath("/", "layout")
     return {
       receipts: rows.map((r) => ({ id: r.id, receiptNo: r.receiptNo, forMonth: r.forMonth, amount: r.amount })),
       paidOn: data.paidOn,
       dueAfter,
+      currentOpenAfter,
     }
   })
 }

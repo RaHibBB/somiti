@@ -80,9 +80,9 @@ export default async function DashboardPage() {
   const investedPct = fund.total > 0 ? 100 - fund.cashPct : 0
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
       {/* Hero: Bismillah, logo, greeting, today's date and three key numbers (open to everyone). */}
-      <section className="relative -mx-4 -mt-4 overflow-hidden rounded-b-[2rem] bg-gradient-to-b from-[#1d3f57] to-[#12303f] px-4 pt-5 pb-6 text-white">
+      <section className="relative -mx-4 -mt-4 overflow-hidden rounded-b-[2rem] bg-gradient-to-b from-[#1d3f57] to-[#12303f] px-4 pt-5 pb-6 text-white lg:col-span-2 lg:mx-0 lg:mt-0 lg:rounded-3xl lg:px-8 lg:pt-6 lg:pb-7">
         {/* Pattern on its own layer: it can't share `background-image` with the gradient. */}
         <div aria-hidden className="pattern-star pointer-events-none absolute inset-0" />
         <p className="relative font-arabic text-center text-[1.7rem] leading-[1.9] text-amber-100" lang="ar" dir="rtl">
@@ -122,13 +122,13 @@ export default async function DashboardPage() {
         ) : null}
       </section>
       {!me ? (
-        <p className="rounded-xl bg-secondary px-3 py-2 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl bg-secondary px-3 py-2 text-center text-sm text-muted-foreground lg:col-span-2">
           কে কত দিয়েছেন, বকেয়া, তহবিল, আয়-ব্যয় — সব এখানে দেখা যায়। দেখতে লগইন লাগে না।
         </p>
       ) : null}
 
       {adminUi ? (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 lg:col-span-2 lg:grid-cols-4 lg:gap-4">
           <Link
             href="/admin/pay"
             className="flex h-20 flex-col items-center justify-center gap-1 rounded-2xl bg-brand-green text-lg font-bold text-white shadow-sm active:opacity-90"
@@ -143,13 +143,13 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/admin/pay/bulk"
-            className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted"
+            className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted lg:h-20 lg:flex-col lg:gap-1 lg:text-base lg:font-semibold"
           >
             <Users className="size-5" /> একসাথে জমা
           </Link>
           <Link
             href="/admin/members/new"
-            className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted"
+            className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted lg:h-20 lg:flex-col lg:gap-1 lg:text-base lg:font-semibold"
           >
             <UserPlus className="size-5" /> নতুন সদস্য
           </Link>
@@ -159,7 +159,7 @@ export default async function DashboardPage() {
       {adminUi && pendingReportCount > 0 ? (
         <Link
           href="/admin/reports"
-          className="flex items-center gap-3 rounded-2xl border-2 border-[#e2136e] bg-pink-50 p-4 text-[#8f0c46]"
+          className="flex items-center gap-3 rounded-2xl border-2 border-[#e2136e] bg-pink-50 p-4 text-[#8f0c46] lg:col-span-2"
         >
           <Smartphone className="size-7 shrink-0" />
           <span className="min-w-0 flex-1">
@@ -221,7 +221,7 @@ export default async function DashboardPage() {
         <Link
           key={p.id}
           href={`/proposals/${p.id}`}
-          className="flex items-center gap-3 rounded-2xl border-2 border-blue-600 bg-blue-50 p-4 text-blue-900"
+          className="flex items-center gap-3 rounded-2xl border-2 border-blue-600 bg-blue-50 p-4 text-blue-900 lg:col-span-2"
         >
           <Vote className="size-7 shrink-0" />
           <span className="min-w-0 flex-1">

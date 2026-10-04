@@ -155,7 +155,7 @@ export function QuranPlayer() {
       aria-pressed={playing}
       aria-label={label}
       className={cn(
-        "fixed bottom-20 left-3 z-50 flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium shadow-lg backdrop-blur print:hidden",
+        "fixed bottom-20 left-3 z-50 flex h-11 lg:bottom-5 lg:left-auto lg:right-5 items-center gap-2 rounded-full border px-4 text-sm font-medium shadow-lg backdrop-blur print:hidden",
         playing ? "border-green-700 bg-brand-green text-white" : "bg-white/95 text-brand-navy",
         state === "waiting" && "animate-pulse",
       )}
