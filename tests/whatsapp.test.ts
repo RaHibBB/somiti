@@ -59,6 +59,8 @@ describe("member and notice messages", () => {
       paid: 1500,
       due: 500,
       overdueMonths: ["2026-10-01"],
+      currentOpen: 0,
+      dueDay: 10,
       accountUrl: "https://example.test/members/14",
     })
     expect(msg).toContain("সদস্য নং ১৪")
@@ -69,5 +71,17 @@ describe("member and notice messages", () => {
   it("formats a notice for the group", async () => {
     const { noticeMessage } = await import("@/lib/whatsapp")
     expect(noticeMessage({ title: "সভা", body: "শুক্রবার বিকেল ৪টায়", url: "https://x.test/notices" })).toContain("*সভা*\nশুক্রবার বিকেল ৪টায়")
+  })
+})
+
+describe("this month not yet paid", () => {
+  it("never says 'no dues' to someone who still has to pay this month", async () => {
+    const { accountSummaryMessage, upcomingReminderMessage } = await import("@/lib/whatsapp")
+    const base = { name: "শরফুদ্দিন", memberNo: 1, shares: 1, sharePrice: 500, paid: 0, due: 0, overdueMonths: [], dueDay: 10, accountUrl: "https://x.test" }
+    const owing = accountSummaryMessage({ ...base, currentOpen: 500 })
+    expect(owing).not.toContain("কোনো বকেয়া নেই")
+    expect(owing).toContain("এই মাসের চাঁদা ৳৫০০ এখনো জমা হয়নি — ১০ তারিখের মধ্যে দিন")
+    expect(accountSummaryMessage({ ...base, paid: 500, currentOpen: 0 })).toContain("কোনো বকেয়া নেই")
+    expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10 })).toContain("অক্টোবর ২০২৬-এর চাঁদা ৳৫০০ এখনো জমা হয়নি")
   })
 })

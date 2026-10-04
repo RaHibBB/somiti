@@ -19,6 +19,7 @@ export default async function MembersPage() {
     shares: m.sharesNow,
     paid: m.paid,
     due: m.due,
+    currentOpen: m.currentOpen,
     cancelled: m.member.status === "cancelled",
   }))
   const active = rows.filter((r) => !r.cancelled)

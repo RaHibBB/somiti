@@ -288,7 +288,7 @@ export function PayForm({
                 · বকেয়া {taka(member.due)} ({overdue.map((o) => monthLabel(o.month)).join(", ")})
               </span>
             ) : (
-              " · কোনো বকেয়া নেই"
+              ` · ${member.open[0]?.month === thisMonth ? `এই মাস বাকি ${taka(member.open[0].remaining)}` : "কোনো বকেয়া নেই"}`
             )}
           </span>
         </span>

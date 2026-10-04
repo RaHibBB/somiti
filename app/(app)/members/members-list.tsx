@@ -14,6 +14,8 @@ export type MemberRow = {
   shares: number
   paid: number
   due: number
+  /** This month's unpaid amount that is not yet overdue. */
+  currentOpen: number
   cancelled: boolean
 }
 
@@ -46,8 +48,13 @@ export function MembersList({ rows, activeCount, isAdmin }: { rows: MemberRow[];
                     <span className="block text-xs text-muted-foreground">বকেয়া</span>
                     <span className="block text-base font-semibold text-destructive">{taka(r.due)}</span>
                   </>
+                ) : r.currentOpen > 0 ? (
+                  <>
+                    <span className="block text-xs text-muted-foreground">এই মাস বাকি</span>
+                    <span className="block text-base font-semibold text-amber-700">{taka(r.currentOpen)}</span>
+                  </>
                 ) : (
-                  <span className="text-sm text-green-700">✓ হালনাগাদ</span>
+                  <span className="text-sm text-green-700">✓ পরিশোধিত</span>
                 )}
               </span>
             </Link>

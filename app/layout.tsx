@@ -1,11 +1,19 @@
 import type { Metadata, Viewport } from "next"
-import { Noto_Sans_Bengali } from "next/font/google"
+import { Noto_Naskh_Arabic, Noto_Sans_Bengali } from "next/font/google"
+import { QuranPlayer } from "@/components/quran-player"
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
 const bengali = Noto_Sans_Bengali({
   variable: "--font-bengali",
   subsets: ["bengali", "latin"],
+  display: "swap",
+})
+
+// Only used for the Bismillah on the home page.
+const arabic = Noto_Naskh_Arabic({
+  variable: "--font-arabic",
+  subsets: ["arabic"],
   display: "swap",
 })
 
@@ -24,9 +32,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="bn" className={`${bengali.variable} h-full antialiased`}>
+    <html lang="bn" className={`${bengali.variable} ${arabic.variable} h-full antialiased`}>
       <body className="min-h-full bg-muted">
         {children}
+        <QuranPlayer />
         <Toaster position="top-center" richColors />
       </body>
     </html>

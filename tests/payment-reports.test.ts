@@ -73,3 +73,20 @@ describe("member-reported payments", () => {
     await expect(pg.exec("UPDATE payment_reports SET status = 'pending' WHERE status = 'approved'")).rejects.toThrow(/already reviewed/)
   })
 })
+
+describe("this month not yet paid (the 'no dues, paid ৳০' confusion)", () => {
+  it("shows an unpaid current month as pending, not overdue — and not as 'no dues'", async () => {
+    // A member who has paid nothing yet (new row, 2 shares from October).
+    const [fresh] = await db.insert(members).values({ memberNo: 9, nameBn: "অনাদায়ী", joinedOn: "2026-10-01" }).returning()
+    await db.insert(shareHistory).values({ memberId: fresh.id, shares: 2, effectiveMonth: "2026-10-01" })
+    // 5 Oct: October's due date (10th) hasn't passed, so nothing is overdue, but ৳১,০০০ is still to pay.
+    const m = (await loadSnapshot(db, "2026-10-05")).members.find((x) => x.member.id === fresh.id)!
+    expect(m.paid).toBe(0)
+    expect(m.due).toBe(0)
+    expect(m.currentOpen).toBe(1000)
+    // From the 11th the same amount becomes a real dues amount and is no longer "current".
+    const later = (await loadSnapshot(db, "2026-10-11")).members.find((x) => x.member.id === fresh.id)!
+    expect(later.due).toBe(1000)
+    expect(later.currentOpen).toBe(0)
+  })
+})

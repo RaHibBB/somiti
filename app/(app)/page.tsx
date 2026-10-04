@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
-import { PageTitle } from "@/components/layout/page-title"
+import { Logo } from "@/components/logo"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
 import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
@@ -12,7 +12,7 @@ import { and, count, eq, notExists } from "drizzle-orm"
 import { CalendarClock, HandCoins, LogIn, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
 import { appUrl } from "@/lib/app-url"
 import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
-import { formatDate, monthLabel, taka, toBn } from "@/lib/format"
+import { dateLongBn, formatDate, monthLabel, taka, toBn } from "@/lib/format"
 import { dueReminder, monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 
@@ -54,6 +54,8 @@ export default async function DashboardPage() {
   const monthPaid = monthLines.reduce((s, l) => s + Math.min(l.paid, l.expected), 0)
   const paidCount = monthLines.filter((l) => l.status === "paid").length
   const owingCount = active.filter((m) => m.due > 0).length
+  // Everyone with something still to pay: overdue, or this month not yet fully paid.
+  const pendingCount = active.filter((m) => m.due > 0 || m.currentOpen > 0).length
   const todays = snap.members.flatMap((m) => m.payments).filter((p) => p.status === "valid" && p.paidOn === snap.today)
   const todayTotal = todays.reduce((s, p) => s + p.amount, 0)
   const groupMsg = adminUi
@@ -67,6 +69,7 @@ export default async function DashboardPage() {
           .filter((m) => m.due > 0)
           .sort((a, b) => b.due - a.due)
           .map((m) => ({ no: m.member.memberNo, name: m.member.nameBn, due: m.due })),
+        notYet: active.filter((m) => m.due === 0 && m.currentOpen > 0).map((m) => ({ no: m.member.memberNo, name: m.member.nameBn })),
         fundTotal: fund.total,
         cash: fund.cash,
         invested: fund.invested,
@@ -78,20 +81,50 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <PageTitle>{me ? "আসসালামু আলাইকুম" : "স্বাগতম"}</PageTitle>
-
-      {!me ? (
-        <div className="space-y-3 rounded-2xl bg-brand-navy p-4 text-white">
-          <p className="text-base leading-relaxed">
-            সমিতির সব হিসাব এখানে সবার জন্য খোলা — কে কত দিয়েছেন, বকেয়া, তহবিল, আয়-ব্যয়। দেখতে লগইন লাগে না।
-          </p>
+      {/* Hero: Bismillah, logo, greeting, today's date and three key numbers (open to everyone). */}
+      <section className="relative -mx-4 -mt-4 overflow-hidden rounded-b-[2rem] bg-gradient-to-b from-[#1d3f57] to-[#12303f] px-4 pt-5 pb-6 text-white">
+        {/* Pattern on its own layer: it can't share `background-image` with the gradient. */}
+        <div aria-hidden className="pattern-star pointer-events-none absolute inset-0" />
+        <p className="relative font-arabic text-center text-[1.7rem] leading-[1.9] text-amber-100" lang="ar" dir="rtl">
+          بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+        </p>
+        <div className="relative mt-3 flex items-center gap-3">
+          <div className="shrink-0 rounded-2xl bg-white/95 p-1.5 shadow-md">
+            <Logo size={52} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-white/75">{me ? "আসসালামু আলাইকুম" : "স্বাগতম"}</p>
+            <p className="truncate text-xl leading-tight font-bold">{me ? me.nameBn : "সমিতির সব হিসাব সবার জন্য খোলা"}</p>
+            <p className="mt-0.5 text-xs text-white/70">{dateLongBn(snap.today)}</p>
+          </div>
+        </div>
+        <div className="relative mt-4 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-2xl bg-white/10 px-1 py-2.5 backdrop-blur-sm">
+            <p className="text-[0.7rem] text-white/70">সক্রিয় সদস্য</p>
+            <p className="text-lg font-bold">{toBn(active.length)} জন</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 px-1 py-2.5 backdrop-blur-sm">
+            <p className="text-[0.7rem] text-white/70">মোট তহবিল</p>
+            <p className="text-lg font-bold">{taka(fund.total)}</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 px-1 py-2.5 backdrop-blur-sm">
+            <p className="text-[0.7rem] text-white/70">এ মাসে আদায়</p>
+            <p className="text-lg font-bold">{toBn(monthExpected ? Math.round((monthPaid * 100) / monthExpected) : 0)}%</p>
+          </div>
+        </div>
+        {!me ? (
           <Link
             href="/login"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-white text-base font-semibold text-brand-navy"
+            className="relative mt-4 flex h-12 items-center justify-center gap-2 rounded-xl bg-white text-base font-semibold text-brand-navy active:opacity-90"
           >
             <LogIn className="size-5" /> লগইন — নিজের হিসাব, জমা জানানো ও ভোট
           </Link>
-        </div>
+        ) : null}
+      </section>
+      {!me ? (
+        <p className="rounded-xl bg-secondary px-3 py-2 text-center text-sm text-muted-foreground">
+          কে কত দিয়েছেন, বকেয়া, তহবিল, আয়-ব্যয় — সব এখানে দেখা যায়। দেখতে লগইন লাগে না।
+        </p>
       ) : null}
 
       {adminUi ? (
@@ -160,10 +193,11 @@ export default async function DashboardPage() {
               <p className="text-xl font-bold">{taka(todayTotal)}</p>
             </div>
             <Link href="/admin/dues" className="rounded-xl bg-red-50 p-3 active:bg-red-100">
-              <p className="text-sm text-red-800">বকেয়া আছে</p>
+              <p className="text-sm text-red-800">টাকা বাকি</p>
               <p className="flex items-center justify-between text-xl font-bold text-red-800">
-                {toBn(owingCount)} জন <ChevronRight className="size-5" />
+                {toBn(pendingCount)} জন <ChevronRight className="size-5" />
               </p>
+              <p className="text-xs text-red-800/80">মেয়াদ পেরিয়েছে {toBn(owingCount)} জন</p>
             </Link>
           </div>
           <a
@@ -177,7 +211,7 @@ export default async function DashboardPage() {
           </>
           ) : (
             <Link href="/grid" className="flex h-11 items-center justify-center gap-1 rounded-xl bg-secondary text-base text-brand-navy">
-              {owingCount > 0 ? `বকেয়া আছে ${toBn(owingCount)} জনের` : "কারো বকেয়া নেই"} — গ্রিডে দেখুন <ChevronRight className="size-5" />
+              {pendingCount > 0 ? `টাকা বাকি আছে ${toBn(pendingCount)} জনের` : "সবার চাঁদা জমা হয়েছে"} — গ্রিডে দেখুন <ChevronRight className="size-5" />
             </Link>
           )}
         </section>
@@ -211,7 +245,9 @@ export default async function DashboardPage() {
           <p className="mt-1 text-sm text-white/85">
             {entry.due > 0
               ? `প্রতি মাসের ${toBn(snap.settings.dueDay)} তারিখের মধ্যে চাঁদা দিন।`
-              : "আপনার কোনো বকেয়া নেই। ধন্যবাদ!"}
+              : entry.currentOpen > 0
+                ? "পুরনো কোনো বকেয়া নেই। তবে এই মাসের চাঁদা এখনো জমা হয়নি।"
+                : "আপনার কোনো বকেয়া নেই। ধন্যবাদ!"}
           </p>
         </div>
         {reminder ? (

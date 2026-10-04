@@ -41,6 +41,8 @@ export type MemberLedger = {
   paid: number
   due: number
   missedStreak: number
+  /** This month's unpaid amount while it is still inside the 1st–10th window (not yet "overdue"). */
+  currentOpen: number
 }
 
 export type SamitiSnapshot = {
@@ -81,6 +83,10 @@ export async function loadSnapshot(db: DB = getDb(), today = todayDhaka()): Prom
       paid: paidForMember(prows),
       due: dueForMember(history, prows, today, ls),
       missedStreak: trailingMissedMonths(lines),
+      currentOpen: (() => {
+        const l = lines.find((x) => x.month === thisMonth)
+        return l && !l.isDue ? l.remaining : 0
+      })(),
     }
   })
   return { today, settings: s, ledgerSettings: ls, members: list }

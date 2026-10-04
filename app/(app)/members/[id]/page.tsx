@@ -9,8 +9,8 @@ import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot } from "@/lib/data"
 import { toBn } from "@/lib/format"
-import { overdueMonths } from "@/lib/ledger"
-import { accountSummaryMessage, reminderMessage, SAMITI_NAME } from "@/lib/whatsapp"
+import { monthOf, overdueMonths } from "@/lib/ledger"
+import { accountSummaryMessage, reminderMessage, SAMITI_NAME, upcomingReminderMessage } from "@/lib/whatsapp"
 
 export default async function MemberAccountPage({ params }: PageProps<"/members/[id]">) {
   const me = await getViewer()
@@ -33,12 +33,22 @@ export default async function MemberAccountPage({ params }: PageProps<"/members/
       paid: entry.paid,
       due: entry.due,
       overdueMonths: overdue,
+      currentOpen: entry.currentOpen,
+      dueDay: snap.settings.dueDay,
       accountUrl: `${await appUrl()}/members/${m.id}`,
     })
     templates = [
       { label: "হিসাবের সারাংশ", text: summary },
       ...(entry.due > 0
         ? [{ label: "বকেয়ার রিমাইন্ডার", text: reminderMessage({ name: m.nameBn, due: entry.due, months: overdue, dueDay: snap.settings.dueDay }) }]
+        : []),
+      ...(entry.currentOpen > 0
+        ? [
+            {
+              label: "এই মাসের রিমাইন্ডার",
+              text: upcomingReminderMessage({ name: m.nameBn, month: monthOf(snap.today), amount: entry.currentOpen, dueDay: snap.settings.dueDay }),
+            },
+          ]
         : []),
       { label: "নিজে লিখুন", text: `আসসালামু আলাইকুম, ${m.nameBn}।\n\n\n— ${SAMITI_NAME}` },
     ]

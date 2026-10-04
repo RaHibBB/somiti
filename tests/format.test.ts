@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { formatDate, monthLabel, monthShort, receiptLabel, taka, toBn, fromBn, dhakaDateString } from "@/lib/format"
+import { dateLongBn, formatDate, monthLabel, monthShort, receiptLabel, taka, toBn, fromBn, dhakaDateString } from "@/lib/format"
 
 describe("format helpers", () => {
   it("converts digits to Bengali and back", () => {
@@ -18,6 +18,7 @@ describe("format helpers", () => {
     expect(monthLabel("2026-10-01")).toBe("অক্টোবর ২০২৬")
     expect(receiptLabel(12)).toBe("R-0012")
     expect(monthShort("2026-10-01")).toBe("অক্টো ২৬")
+    expect(dateLongBn("2026-10-04")).toBe("রবিবার, ৪ অক্টোবর ২০২৬")
   })
   it("uses Asia/Dhaka for the calendar day", () => {
     // 2026-10-09 20:00 UTC is already 10 Oct in Dhaka (UTC+6)

@@ -90,3 +90,14 @@
     @apply bg-gray-200 text-gray-500;
   }
 }
+
+/* Home-page hero: a faint eight-pointed-star lattice (two overlapping squares), tiny inline SVG. */
+@layer components {
+  .pattern-star {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.11' stroke-width='1.2'%3E%3Crect x='12' y='12' width='32' height='32'/%3E%3Crect x='12' y='12' width='32' height='32' transform='rotate(45 28 28)'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 56px 56px;
+  }
+  .font-arabic {
+    font-family: var(--font-arabic), "Noto Naskh Arabic", serif;
+  }
+}

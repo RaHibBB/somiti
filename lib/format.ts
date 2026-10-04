@@ -104,6 +104,15 @@ export function todayDhaka(): string {
   return dhakaDateString(new Date())
 }
 
+export const WEEKDAYS_BN = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"]
+
+/** "2026-10-04" → "রবিবার, ৪ অক্টোবর ২০২৬" */
+export function dateLongBn(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number)
+  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+  return `${WEEKDAYS_BN[weekday]}, ${toBn(d)} ${MONTHS_BN[m - 1]} ${toBn(y)}`
+}
+
 /** Receipt number 12 → "R-0012" */
 export function receiptLabel(n: number): string {
   return "R-" + String(n).padStart(4, "0")
