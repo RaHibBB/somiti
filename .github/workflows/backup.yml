@@ -2,7 +2,8 @@
 #
 # Secrets (Settings → Secrets and variables → Actions):
 #   DATABASE_URL        Neon connection string. Prefer the DIRECT (non-pooled) host for pg_dump.
-#   BACKUP_REPO_TOKEN   Fine-grained token with "Contents: Read and write" on samiti-backups only.
+#   BACKUP_DEPLOY_KEY   Private SSH key whose public half is a *write* deploy key on samiti-backups
+#                       (access to that one repo only; no personal token needed).
 # Optional variable:
 #   BACKUP_REPO         owner/name of the backup repo (default: <this owner>/samiti-backups)
 
@@ -44,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ vars.BACKUP_REPO || format('{0}/samiti-backups', github.repository_owner) }}
-          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          ssh-key: ${{ secrets.BACKUP_DEPLOY_KEY }}
           path: backup-repo
 
       - name: Dump database and export CSVs

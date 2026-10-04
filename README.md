@@ -108,10 +108,11 @@ How it stays in sync: every write adds a `sheet_outbox` row in the same DB trans
 Setup:
 
 1. Create a **private** repo named `samiti-backups` (same owner as this repo). Add a README so it has a default branch.
-2. Create a **fine-grained personal access token**: *Repository access → only `samiti-backups`*, *Permissions → Contents: Read and write*.
+2. Create a **deploy key** with write access on `samiti-backups` (an SSH key that only works for that repo):
+   `ssh-keygen -t ed25519 -N "" -f backup_key` → add `backup_key.pub` under *samiti-backups → Settings → Deploy keys* with **Allow write access**.
 3. In **this** repo → *Settings → Secrets and variables → Actions*:
    - `DATABASE_URL`: Neon connection string. Use the **direct** host (without `-pooler`), which is what pg_dump needs.
-   - `BACKUP_REPO_TOKEN`: the token above.
+   - `BACKUP_DEPLOY_KEY`: the contents of the private `backup_key` file (then delete the local key files).
    - (optional variable `BACKUP_REPO` = `owner/name` if the backup repo is elsewhere.)
 4. *Actions → Weekly backup → Run workflow* once to test.
 
