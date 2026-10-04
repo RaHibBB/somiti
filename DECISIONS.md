@@ -227,3 +227,11 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - Imported from the old sheet: 32 members (6 admins), 32 share rows, 17 payments (৳১৫,০০০, R-0001…R-0017).
 - Members ২৩ and ২৪ share ২২'s phone, and ২৬ shares ২৫'s; each phone can belong to one login only, so those three were imported **without a phone** (they log in with their member number; an admin can add their own phone later).
 - Starting passwords were written to `import-passwords.txt` on the admin's PC (gitignored) instead of the terminal, so they never appeared in logs.
+
+## Weekly backup live (2026-10-04)
+
+- Private repo **RaHibBB/samiti-backups** (private on purpose: it holds every member's data; the app repo stays public).
+- The workflow pushes with a **write deploy key** scoped to that one repo (`BACKUP_DEPLOY_KEY` secret) instead of a personal access token, so nothing else on the account is exposed. The key was generated locally, uploaded, and the local copies deleted.
+- `DATABASE_URL` secret uses Neon's **direct** (non-pooled) host, as pg_dump needs.
+- First run (manual) succeeded: `backups/2026-10-04.sql.gz` + 12 CSVs. **Restore verified**: the dump was downloaded and restored into a throwaway database → 32 members, 6 admins, 17 payments / ৳১৫,০০০, receipt sequence continues at 18, no-delete triggers present.
+- `actions/checkout` bumped to v5 (v4 targets the deprecated Node 20 runtime).

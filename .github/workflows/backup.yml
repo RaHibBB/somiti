@@ -42,7 +42,7 @@ jobs:
           echo "/usr/lib/postgresql/${PG_MAJOR}/bin" >> "$GITHUB_PATH"
 
       - name: Check out backup repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ vars.BACKUP_REPO || format('{0}/samiti-backups', github.repository_owner) }}
           ssh-key: ${{ secrets.BACKUP_DEPLOY_KEY }}
