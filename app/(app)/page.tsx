@@ -1,0 +1,172 @@
+import Link from "next/link"
+import { AlertTriangle, ChevronRight } from "lucide-react"
+import { PageTitle } from "@/components/layout/page-title"
+import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
+import { requireMember } from "@/lib/auth/session"
+import { getSnapshot, loadFund, loadLatestNotices } from "@/lib/data"
+import { getDb } from "@/lib/db"
+import { proposals, votes } from "@/lib/db/schema"
+import { closeExpiredProposals } from "@/lib/services/proposals"
+import { and, eq, notExists } from "drizzle-orm"
+import { HandCoins, Plus, Vote } from "lucide-react"
+import { formatDate, monthLabel, taka, toBn } from "@/lib/format"
+import { monthOf } from "@/lib/ledger"
+import { cn } from "@/lib/utils"
+
+export default async function DashboardPage() {
+  const me = await requireMember()
+  const db = getDb()
+  await closeExpiredProposals(db)
+  const [snap, fund, notices, pendingVotes] = await Promise.all([
+    getSnapshot(),
+    loadFund(),
+    loadLatestNotices(3),
+    db
+      .select({ id: proposals.id, title: proposals.title })
+      .from(proposals)
+      .where(
+        and(
+          eq(proposals.status, "open"),
+          notExists(
+            db
+              .select({ one: votes.id })
+              .from(votes)
+              .where(and(eq(votes.proposalId, proposals.id), eq(votes.memberId, me.id))),
+          ),
+        ),
+      ),
+  ])
+  const entry = snap.members.find((m) => m.member.id === me.id)!
+  const thisMonth = monthOf(snap.today)
+  const current = entry.lines.find((l) => l.month === thisMonth)
+  const investedPct = fund.total > 0 ? 100 - fund.cashPct : 0
+
+  return (
+    <div className="space-y-5">
+      <PageTitle>আসসালামু আলাইকুম</PageTitle>
+
+      {me.role === "admin" ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            href="/admin/pay"
+            className="flex h-20 flex-col items-center justify-center gap-1 rounded-2xl bg-brand-green text-lg font-bold text-white shadow-sm active:opacity-90"
+          >
+            <HandCoins className="size-7" /> জমা নিন
+          </Link>
+          <Link
+            href="/admin/transactions/new"
+            className="flex h-20 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-brand-navy bg-white text-base font-semibold text-brand-navy active:bg-muted"
+          >
+            <Plus className="size-7" /> আয়/ব্যয় যোগ
+          </Link>
+        </div>
+      ) : null}
+
+      {pendingVotes.map((p) => (
+        <Link
+          key={p.id}
+          href={`/proposals/${p.id}`}
+          className="flex items-center gap-3 rounded-2xl border-2 border-blue-600 bg-blue-50 p-4 text-blue-900"
+        >
+          <Vote className="size-7 shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm">আপনার ভোট দরকার</span>
+            <span className="block truncate text-base font-semibold">{p.title}</span>
+          </span>
+          <ChevronRight className="size-5" />
+        </Link>
+      ))}
+
+      <section className="space-y-2">
+        <div
+          className={cn(
+            "rounded-2xl p-4 text-white",
+            entry.due > 0 ? "bg-destructive" : "bg-brand-navy",
+          )}
+        >
+          <p className="text-sm text-white/80">আমার বকেয়া</p>
+          <p className="text-3xl font-bold">{taka(entry.due)}</p>
+          <p className="mt-1 text-sm text-white/85">
+            {entry.due > 0
+              ? `প্রতি মাসের ${toBn(snap.settings.dueDay)} তারিখের মধ্যে চাঁদা দিন।`
+              : "আপনার কোনো বকেয়া নেই। ধন্যবাদ!"}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <StatCard label="আমার শেয়ার" value={`${toBn(entry.sharesNow)} টি`} />
+          <StatCard label="আমার মোট জমা" value={taka(entry.paid)} tone="good" />
+        </div>
+        {current ? (
+          <div className="flex items-center justify-between rounded-xl border bg-white p-3">
+            <div>
+              <p className="text-sm text-muted-foreground">এই মাস ({monthLabel(thisMonth)})</p>
+              <p className="text-base">
+                {taka(current.paid)} / {taka(current.expected)}
+              </p>
+            </div>
+            <span className={cn("rounded-md px-3 py-1 text-sm", STATUS_CLASS[current.status])}>{STATUS_LABEL[current.status]}</span>
+          </div>
+        ) : null}
+        <Link href="/me" className="flex h-11 items-center justify-center gap-1 text-base text-brand-navy">
+          আমার পুরো হিসাব দেখুন <ChevronRight className="size-5" />
+        </Link>
+      </section>
+
+      <section className="space-y-3 rounded-2xl border bg-white p-4">
+        <h2 className="text-lg font-semibold text-brand-navy">সমিতির তহবিল</h2>
+        <p className="text-3xl font-bold">{taka(fund.total)}</p>
+        <div>
+          <div className="flex h-4 overflow-hidden rounded-full bg-muted" role="img" aria-label={`নগদ ${toBn(fund.cashPct)}%, বিনিয়োগ ${toBn(investedPct)}%`}>
+            <div className="bg-brand-green" style={{ width: `${fund.total > 0 ? fund.cashPct : 0}%` }} />
+            <div className="bg-brand-navy" style={{ width: `${investedPct}%` }} />
+          </div>
+          <div className="mt-2 flex justify-between text-sm">
+            <span>
+              <span className="mr-1 inline-block size-3 rounded-sm bg-brand-green align-middle" />
+              নগদ {taka(fund.cash)} ({toBn(fund.cashPct)}%)
+            </span>
+            <span>
+              <span className="mr-1 inline-block size-3 rounded-sm bg-brand-navy align-middle" />
+              বিনিয়োগ {taka(fund.invested)}
+            </span>
+          </div>
+        </div>
+        {fund.cashBelowMinimum ? (
+          <p className="flex items-start gap-2 rounded-lg bg-amber-100 p-2 text-sm text-amber-900">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            নগদ তহবিল {toBn(fund.minCashPct)}%-এর নিচে নেমে গেছে। নিয়ম অনুযায়ী কমপক্ষে {toBn(fund.minCashPct)}% নগদ রাখতে হবে।
+          </p>
+        ) : null}
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+          <dt className="text-muted-foreground">মোট চাঁদা জমা</dt>
+          <dd className="text-right">{taka(fund.totalDues)}</dd>
+          <dt className="text-muted-foreground">আয়</dt>
+          <dd className="text-right">{taka(fund.income)}</dd>
+          <dt className="text-muted-foreground">খরচ ও অন্যান্য</dt>
+          <dd className="text-right">{taka(fund.byType.expense + fund.byType.member_refund + fund.byType.dividend)}</dd>
+        </dl>
+        <Link href="/transactions" className="flex h-10 items-center justify-center gap-1 text-base text-brand-navy">
+          আয়-ব্যয় দেখুন <ChevronRight className="size-5" />
+        </Link>
+      </section>
+
+      {notices.length > 0 ? (
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-brand-navy">নোটিশ</h2>
+            <Link href="/notices" className="text-base text-brand-navy">
+              সব নোটিশ
+            </Link>
+          </div>
+          {notices.map((n) => (
+            <article key={n.id} className="rounded-xl border-l-4 border-brand-green bg-white p-3">
+              <p className="text-base font-semibold">{n.title}</p>
+              <p className="mt-1 text-base whitespace-pre-line">{n.body}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatDate(n.createdAt)}</p>
+            </article>
+          ))}
+        </section>
+      ) : null}
+    </div>
+  )
+}

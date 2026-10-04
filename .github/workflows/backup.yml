@@ -1,0 +1,89 @@
+# Weekly database backup → private repo `samiti-backups` (spec §10). Free on GitHub Actions.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   DATABASE_URL        Neon connection string. Prefer the DIRECT (non-pooled) host for pg_dump.
+#   BACKUP_REPO_TOKEN   Fine-grained token with "Contents: Read and write" on samiti-backups only.
+# Optional variable:
+#   BACKUP_REPO         owner/name of the backup repo (default: <this owner>/samiti-backups)
+
+name: Weekly backup
+
+on:
+  schedule:
+    # Friday 02:00 Asia/Dhaka = Thursday 20:00 UTC
+    - cron: "0 20 * * 4"
+  workflow_dispatch:
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Must match (or exceed) the Neon server's major version. Neon's default is Postgres 17.
+  PG_MAJOR: "17"
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install PostgreSQL client ${{ env.PG_MAJOR }}
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-${PG_MAJOR}"
+          echo "/usr/lib/postgresql/${PG_MAJOR}/bin" >> "$GITHUB_PATH"
+
+      - name: Check out backup repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.BACKUP_REPO || format('{0}/samiti-backups', github.repository_owner) }}
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: backup-repo
+
+      - name: Dump database and export CSVs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          pg_dump --version
+          DAY=$(TZ=Asia/Dhaka date +%F)
+          mkdir -p "backup-repo/backups/csv/$DAY"
+
+          # Full logical backup (schema + data + triggers + sequences).
+          pg_dump "$DATABASE_URL" --no-owner --no-privileges --format=plain \
+            | gzip -9 > "backup-repo/backups/$DAY.sql.gz"
+          gzip -t "backup-repo/backups/$DAY.sql.gz"
+
+          # One CSV per table (UTF-8 with BOM for Excel). PIN hashes are left out of the CSVs.
+          for t in $(psql "$DATABASE_URL" -At -c "select tablename from pg_tables where schemaname='public' and tablename not like '\_\_%' order by 1"); do
+            if [ "$t" = "members" ]; then
+              q="select id, member_no, name_bn, phone, role, status, joined_on, nominee_name, nominee_phone, must_change_pin, failed_logins, locked_until, session_version, notes, cancelled_at, cancel_reason, created_at, updated_at from members order by id"
+            else
+              q="select * from \"$t\" order by 1"
+            fi
+            out="backup-repo/backups/csv/$DAY/$t.csv"
+            printf '\xEF\xBB\xBF' > "$out"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "\copy ($q) to stdout with (format csv, header true)" >> "$out"
+          done
+          ls -la "backup-repo/backups" "backup-repo/backups/csv/$DAY"
+
+      - name: Commit and push
+        working-directory: backup-repo
+        run: |
+          DAY=$(TZ=Asia/Dhaka date +%F)
+          git config user.name "samiti-backup-bot"
+          git config user.email "samiti-backup-bot@users.noreply.github.com"
+          git add backups
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit."
+          else
+            git commit -m "Backup $DAY"
+            git push
+          fi

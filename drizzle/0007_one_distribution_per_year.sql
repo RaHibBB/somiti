@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "profit_distributions_one_valid_per_year" ON "profit_distributions" USING btree ("period_start") WHERE status = 'valid';

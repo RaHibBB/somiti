@@ -1,0 +1,97 @@
+/* A4 print styles for /print/* (spec §8). Bengali text uses the same embedded
+   Noto Sans Bengali web font as the app, so conjuncts (ক্ষ, ন্ত, স্ব) render correctly. */
+
+@page {
+  size: A4;
+  margin: 12mm;
+
+  /* Page margin boxes: supported by Chrome/Edge 131+ (incl. Android Chrome). */
+  @bottom-right {
+    content: "পৃষ্ঠা " counter(page) " / " counter(pages);
+    font-family: var(--font-bengali), "Noto Sans Bengali", sans-serif;
+    font-size: 9pt;
+    color: #555;
+  }
+}
+
+.print-doc {
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: #111;
+  background: #fff;
+}
+
+.print-doc table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.print-doc th,
+.print-doc td {
+  border: 1px solid #c8d0d6;
+  padding: 3px 6px;
+  text-align: left;
+  vertical-align: top;
+}
+.print-doc th {
+  background: #eef3f6;
+  font-weight: 600;
+}
+.print-doc td.num,
+.print-doc th.num {
+  text-align: right;
+  white-space: nowrap;
+}
+.print-doc thead {
+  display: table-header-group; /* repeat headers on every page */
+}
+.print-doc tr {
+  break-inside: avoid;
+}
+.print-doc .void td {
+  color: #888;
+  text-decoration: line-through;
+}
+.print-doc .void td.void-note {
+  text-decoration: none;
+  color: #b00020;
+}
+
+@media screen {
+  .print-doc {
+    max-width: 210mm;
+    margin: 0 auto 2rem;
+    padding: 12px;
+    /* Wide tables (ledger, monthly report) scroll inside the document on phones
+       instead of making the whole page scroll sideways. Print is unaffected. */
+    overflow-x: auto;
+  }
+  .print-doc table {
+    min-width: max-content;
+  }
+}
+
+@media screen and (min-width: 820px) {
+  .print-doc {
+    padding: 12mm;
+    box-shadow: 0 1px 6px rgb(0 0 0 / 0.12);
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  .print-doc {
+    box-shadow: none;
+    padding: 0;
+    max-width: none;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-doc th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

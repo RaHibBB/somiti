@@ -1,0 +1,52 @@
+import Link from "next/link"
+import { ChevronRight, UserPlus } from "lucide-react"
+import { PageTitle } from "@/components/layout/page-title"
+import { requireAdmin } from "@/lib/auth/session"
+import { getSnapshot } from "@/lib/data"
+import { taka, toBn } from "@/lib/format"
+
+export default async function AdminMembersPage() {
+  await requireAdmin()
+  const snap = await getSnapshot()
+  return (
+    <>
+      <PageTitle
+        action={
+          <Link href="/admin/members/new" className="flex h-11 items-center gap-1 rounded-lg bg-primary px-3 text-base text-white">
+            <UserPlus className="size-5" /> নতুন
+          </Link>
+        }
+      >
+        সদস্য ব্যবস্থাপনা
+      </PageTitle>
+      <ul className="divide-y overflow-hidden rounded-xl border bg-white">
+        {snap.members.map(({ member: m, sharesNow, due }) => (
+          <li key={m.id}>
+            <Link href={`/admin/members/${m.id}`} className="flex min-h-16 items-center gap-3 px-3 py-2 active:bg-muted">
+              <span className="w-10 shrink-0 rounded-md bg-secondary py-1 text-center text-sm font-semibold text-brand-navy">
+                {toBn(m.memberNo)}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-base">
+                  {m.nameBn}
+                  {m.role === "admin" ? <span className="ml-1 text-xs text-brand-green">● অ্যাডমিন</span> : null}
+                </span>
+                <span className="block text-sm text-muted-foreground">
+                  {m.status === "cancelled" ? (
+                    <span className="text-destructive">বাতিল</span>
+                  ) : (
+                    <>
+                      {toBn(sharesNow)} শেয়ার · {m.phone ? toBn(m.phone) : "মোবাইল নেই"}
+                    </>
+                  )}
+                </span>
+              </span>
+              {due > 0 ? <span className="text-sm font-semibold text-destructive">{taka(due)}</span> : null}
+              <ChevronRight className="size-5 text-muted-foreground" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
