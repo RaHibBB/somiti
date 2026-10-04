@@ -50,3 +50,7 @@ next-env.d.ts
 
 # starting passwords written by the one-time import
 /import-passwords*.txt
+
+# Google service account key (never commit)
+/service-account*.json
+/*-key*.json
