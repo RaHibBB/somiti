@@ -77,3 +77,32 @@ export function monthlyGroupMessage(input: {
     `বিস্তারিত রিপোর্ট: ${input.reportUrl}`,
   ].join("\n")
 }
+
+/** A member's account at a glance — for an admin to send on WhatsApp. */
+export function accountSummaryMessage(input: {
+  name: string
+  memberNo: number
+  shares: number
+  sharePrice: number
+  paid: number
+  due: number
+  overdueMonths: string[]
+  accountUrl: string
+}): string {
+  return [
+    `আসসালামু আলাইকুম, ${input.name}।`,
+    `সমিতিতে আপনার হিসাব (সদস্য নং ${toBn(input.memberNo)}):`,
+    `• শেয়ার: ${toBn(input.shares)}টি (মাসে ${taka(input.shares * input.sharePrice)})`,
+    `• মোট জমা: ${taka(input.paid)}`,
+    input.due > 0
+      ? `• বকেয়া: ${taka(input.due)} (${input.overdueMonths.map(monthLabel).join(", ")})`
+      : "• আপনার কোনো বকেয়া নেই। ধন্যবাদ!",
+    `বিস্তারিত দেখুন: ${input.accountUrl}`,
+    `— ${SAMITI_NAME}`,
+  ].join("\n")
+}
+
+/** A notice, formatted for the samiti's WhatsApp group. */
+export function noticeMessage(input: { title: string; body: string; url: string }): string {
+  return [`📢 ${SAMITI_NAME}`, "", `*${input.title}*`, input.body, "", `সব নোটিশ: ${input.url}`].join("\n")
+}

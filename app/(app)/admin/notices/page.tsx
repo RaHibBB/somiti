@@ -1,5 +1,8 @@
 import { desc, eq } from "drizzle-orm"
+import { MessageCircle } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
+import { appUrl } from "@/lib/app-url"
+import { noticeMessage, waLink } from "@/lib/whatsapp"
 import { requireAdmin } from "@/lib/auth/session"
 import { getDb } from "@/lib/db"
 import { members, notices } from "@/lib/db/schema"
@@ -8,6 +11,7 @@ import { NewNoticeForm, NoticeStatusButton } from "./notice-forms"
 
 export default async function AdminNoticesPage() {
   await requireAdmin()
+  const base = await appUrl()
   const rows = await getDb()
     .select({ n: notices, by: members.nameBn })
     .from(notices)
@@ -33,6 +37,16 @@ export default async function AdminNoticesPage() {
               <NoticeStatusButton id={n.id} archived={n.status === "archived"} />
             </div>
             <p className="mt-2 text-base whitespace-pre-line">{n.body}</p>
+            {n.status === "active" ? (
+              <a
+                href={waLink(null, noticeMessage({ title: n.title, body: n.body, url: `${base}/notices` }))}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white active:opacity-90"
+              >
+                <MessageCircle className="size-5" /> WhatsApp গ্রুপে পাঠান
+              </a>
+            ) : null}
           </li>
         ))}
       </ul>

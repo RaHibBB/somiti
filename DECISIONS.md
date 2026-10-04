@@ -275,3 +275,10 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - Visitors get a header **লগইন** button and a bottom bar without "আমার হিসাব" (হোম · সদস্য · গ্রিড · আয়-ব্যয় · আরও). The home page shows a welcome card with login, **this month's collection progress (now shown to everyone)**, open votes, the fund and notices; personal sections only after login; admin extras (today's cash, WhatsApp group button, যাচাই card) stay admin-only.
 - **Kept private even now:** phone numbers and emails (admins only; a member sees their own on their printout) — verified 0 phone numbers on all public pages. Receipt photos were already public URLs.
 - **Not indexed by search engines:** `robots.txt` disallows all and every page carries `noindex, nofollow`, so names and amounts don't appear in Google results even though the link is open.
+
+## WhatsApp messages from the app (2026-10-04)
+
+- **Member page → "…-কে WhatsApp-এ মেসেজ"** (admins only, collapsed by default): pick a ready message — হিসাবের সারাংশ (shares, total paid, dues with months, link to their public account page), বকেয়ার রিমাইন্ডার (only when they owe), or নিজে লিখুন — edit it freely, then **WhatsApp-এ পাঠান** opens WhatsApp to that member's number with the text filled in. No phone → WhatsApp asks whom to send to. Free (wa.me link), nothing is sent by the server.
+- **Notices → "WhatsApp গ্রুপে পাঠান"** on every active notice (bold title, body, link to all notices).
+- Visitors and members never get the composer, so phone numbers stay admin-only (verified: no `wa.me`/phone in the public member page).
+- Existing WhatsApp spots unchanged: receipt after a payment, bulk-receipt buttons, dues reminders, monthly summary to the group.

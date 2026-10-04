@@ -47,3 +47,27 @@ describe("monthly group message", () => {
     expect(msg).toContain("https://example.test/print/month/2026-10")
   })
 })
+
+describe("member and notice messages", () => {
+  it("summarises one member's account", async () => {
+    const { accountSummaryMessage } = await import("@/lib/whatsapp")
+    const msg = accountSummaryMessage({
+      name: "রায়হান",
+      memberNo: 14,
+      shares: 2,
+      sharePrice: 500,
+      paid: 1500,
+      due: 500,
+      overdueMonths: ["2026-10-01"],
+      accountUrl: "https://example.test/members/14",
+    })
+    expect(msg).toContain("সদস্য নং ১৪")
+    expect(msg).toContain("শেয়ার: ২টি (মাসে ৳১,০০০)")
+    expect(msg).toContain("বকেয়া: ৳৫০০ (অক্টোবর ২০২৬)")
+    expect(msg).toContain("https://example.test/members/14")
+  })
+  it("formats a notice for the group", async () => {
+    const { noticeMessage } = await import("@/lib/whatsapp")
+    expect(noticeMessage({ title: "সভা", body: "শুক্রবার বিকেল ৪টায়", url: "https://x.test/notices" })).toContain("*সভা*\nশুক্রবার বিকেল ৪টায়")
+  })
+})
