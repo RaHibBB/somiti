@@ -3,6 +3,7 @@ import { Users } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
+import { monthOf } from "@/lib/ledger"
 import { PayForm, type PayMember } from "./pay-form"
 
 export const metadata = { title: "জমা নিন — সমিতি" }
@@ -35,7 +36,13 @@ export default async function TakePaymentPage({ searchParams }: PageProps<"/admi
       >
         জমা নিন
       </PageTitle>
-      <PayForm members={list} today={snap.today} preselectId={preselect} />
+      <PayForm
+        members={list}
+        today={snap.today}
+        thisMonth={monthOf(snap.today)}
+        sharePrice={snap.settings.sharePrice}
+        preselectId={preselect}
+      />
     </>
   )
 }

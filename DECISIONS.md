@@ -288,3 +288,12 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - **Wrong entry on member ১৪:** Shuvo set ১৪'s shares to 2 from November and took a November payment of ৳১,০০০ (R-0018) by mistake, which made the fund show ৳১৬,০০০ instead of ৳১৫,০০০. On Rahib's instruction R-0018 was **voided** (reason recorded, `voided_by` = Rahib); valid dues are back to ৳১৫,০০০ and the sheet shows it as বাতিল. (Rahib had separately set ১৪ to 2 shares from October, so October now shows ৳৫০০ remaining.)
 - **"There's no delete option":** deleting is deliberately impossible (spec: data is never lost); **বাতিল is the delete**. It was only reachable via আরও → ভুল এন্ট্রি বাতিল, so it is now also: a **"ভুল হলে বাতিল"** button on every valid payment on the member's account page (admins), and **"ভুল হয়েছে? এখনই বাতিল করুন"** right on the take-payment success screen. The confirmation text explains that this is the delete, kept with a reason.
 - **PDF authorisation:** every print page now ends with an authorisation block. If an **admin** downloads it: "ডাউনলোড ও প্রত্যয়ন করেছেন: <name> (অ্যাডমিন, সদস্য নং …)", the time, and a signature line under their name. For members/visitors the **default** is "সমিতির পক্ষে স্বাক্ষর" with a blank line and a note to get any admin's signature for certification. (The download itself is not written to the audit log — reading never writes.)
+
+## Easier "জমা নিন" (take payment) page (2026-10-04)
+
+- **Amount first.** The admin types what was handed over ("কত টাকা দিলেন?", big field, Bengali digits OK); `allocatePayment()` (lib/ledger.ts, tested) spreads it over the open months **oldest first** — full months, then a partial last month — and shows the breakdown ("নভেম্বর ৳১,৫০০ পুরো · জানুয়ারি ৳১,০০০ আংশিক"). Anything beyond the end of the term is flagged and can't be saved.
+- **Quick amount chips:** ১ মাস · সব বকেয়া · ২/৩/৬ মাস, each with its amount (duplicates hidden).
+- **Member list opens on "টাকা বাকি"** (overdue, or this month not yet fully paid) with a count, each row showing "বকেয়া ৳…" / "এই মাস ৳…" / "✓ পরিশোধিত"; "সবাই" shows everyone. Empty state when everyone has paid.
+- The member card shows shares, monthly amount and which months are overdue; tapping it changes the member.
+- **"মাস নিজে বাছাই করুন"** keeps the old month-by-month choice (2-column grid) for the rare case of skipping a month.
+- Save button reads "সংরক্ষণ করুন · ৳২,৫০০ · ২ মাস"; one receipt per month as before; date/note stay tucked away (label shows "আজ"); success screen (receipts, WhatsApp, বাতিল) unchanged.

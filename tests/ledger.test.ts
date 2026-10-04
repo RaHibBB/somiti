@@ -163,3 +163,27 @@ describe("due reminder", () => {
     expect(dueReminder(memberMonths(h, [], "2026-10-11", S), "2026-10-11", 10)).toBeNull()
   })
 })
+
+describe("payment allocation", () => {
+  const open = [
+    { month: "2026-10-01", remaining: 500 }, // half paid already
+    { month: "2026-11-01", remaining: 1000 },
+    { month: "2026-12-01", remaining: 1000 },
+  ]
+  it("fills the oldest months first, then a partial month", async () => {
+    const { allocatePayment } = await import("@/lib/ledger")
+    expect(allocatePayment(open, 2000)).toEqual({
+      items: [
+        { forMonth: "2026-10-01", amount: 500, full: true },
+        { forMonth: "2026-11-01", amount: 1000, full: true },
+        { forMonth: "2026-12-01", amount: 500, full: false },
+      ],
+      leftover: 0,
+    })
+  })
+  it("reports what doesn't fit, and handles zero", async () => {
+    const { allocatePayment } = await import("@/lib/ledger")
+    expect(allocatePayment(open, 3000).leftover).toBe(500)
+    expect(allocatePayment(open, 0)).toEqual({ items: [], leftover: 0 })
+  })
+})

@@ -233,3 +233,23 @@ export function dueReminder(lines: MonthLine[], today: string, dueDay: number): 
   const daysLeft = Math.round((Date.parse(dueDate + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86_400_000)
   return { month: line.month, remaining: line.remaining, dueDate, daysLeft }
 }
+
+// ── Payment allocation ───────────────────────────────────────────────────────
+
+export type Allocation = { items: { forMonth: string; amount: number; full: boolean }[]; leftover: number }
+
+/**
+ * "He gave ৳X": spread the amount over the open months, oldest first — full months, then a
+ * partial last month. Whatever doesn't fit inside the term is returned as `leftover`.
+ */
+export function allocatePayment(open: { month: string; remaining: number }[], amount: number): Allocation {
+  const items: Allocation["items"] = []
+  let left = Math.max(0, Math.floor(amount))
+  for (const o of open) {
+    if (left <= 0) break
+    const take = Math.min(left, o.remaining)
+    items.push({ forMonth: o.month, amount: take, full: take === o.remaining })
+    left -= take
+  }
+  return { items, leftover: left }
+}

@@ -1,13 +1,14 @@
 "use client"
 
 import { useMemo, useRef, useState, useTransition } from "react"
-import { Check, Loader2, MessageCircle, RotateCcw } from "lucide-react"
+import { Check, ChevronDown, Loader2, MessageCircle, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FormError } from "@/components/forms/form-bits"
 import { MemberPicker } from "@/components/member-picker"
 import { fromBn, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
+import { allocatePayment } from "@/lib/ledger"
 import { receiptMessage, waLink } from "@/lib/whatsapp"
 import { cn } from "@/lib/utils"
 import { takePaymentAction, type TakePaymentResult } from "./actions"
@@ -30,37 +31,75 @@ function newRef() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : null
 }
 
-export function PayForm({ members, today, preselectId }: { members: PayMember[]; today: string; preselectId?: number }) {
+const toInt = (s: string) => Number(fromBn(s).replace(/[,\s৳]/g, "")) || 0
+
+/** Something to pay now: overdue, or this month not yet fully paid. */
+function owesNow(m: PayMember, thisMonth: string) {
+  return m.due > 0 || m.open.some((o) => o.month === thisMonth)
+}
+
+export function PayForm({
+  members,
+  today,
+  thisMonth,
+  sharePrice,
+  preselectId,
+}: {
+  members: PayMember[]
+  today: string
+  thisMonth: string
+  sharePrice: number
+  preselectId?: number
+}) {
   const [memberId, setMemberId] = useState<number | null>(
     preselectId && members.some((m) => m.id === preselectId) ? preselectId : null,
   )
   const member = members.find((m) => m.id === memberId) ?? null
-  const [selected, setSelected] = useState<string[]>(() => (member?.open[0] ? [member.open[0].month] : []))
+  const [listMode, setListMode] = useState<"owing" | "all">("owing")
+  // Amount-first: the admin types what was handed over; months are filled oldest first.
   const [amount, setAmount] = useState<string>(() => (member?.open[0] ? String(member.open[0].remaining) : ""))
+  // Optional manual mode: choose months yourself (e.g. to skip a month).
+  const [manual, setManual] = useState(false)
+  const [selected, setSelected] = useState<string[]>([])
   const [method, setMethod] = useState<Method>("cash")
   const [trxId, setTrxId] = useState("")
   const [note, setNote] = useState("")
   const [paidOn, setPaidOn] = useState(today)
-  // One idempotency key per distinct request: retrying the same save reuses its key,
-  // changing the member, months, amounts or method gets a fresh one.
+  // One idempotency key per distinct request: retrying the same save reuses its key.
   const refs = useRef(new Map<string, string | null>())
   const [error, setError] = useState<string>()
   const [result, setResult] = useState<TakePaymentResult | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const multi = selected.length > 1
-  const items = useMemo(() => {
-    if (!member) return []
-    if (selected.length === 1) return [{ forMonth: selected[0], amount: Number(fromBn(amount).replace(/[,\s]/g, "")) || 0 }]
-    return member.open.filter((o) => selected.includes(o.month)).map((o) => ({ forMonth: o.month, amount: o.remaining }))
-  }, [member, selected, amount])
-  const total = items.reduce((s, i) => s + i.amount, 0)
+  const plan = useMemo(() => {
+    if (!member) return { items: [], leftover: 0 }
+    if (!manual) return allocatePayment(member.open, toInt(amount))
+    const chosen = member.open.filter((o) => selected.includes(o.month))
+    if (chosen.length === 1) {
+      const a = toInt(amount)
+      return { items: [{ forMonth: chosen[0].month, amount: a, full: a >= chosen[0].remaining }], leftover: 0 }
+    }
+    return { items: chosen.map((o) => ({ forMonth: o.month, amount: o.remaining, full: true })), leftover: 0 }
+  }, [member, manual, selected, amount])
+  const total = plan.items.reduce((s, i) => s + i.amount, 0)
+
+  // Quick amounts: 1 month, everything overdue, 2 / 3 / 6 months.
+  const quick = useMemo(() => {
+    if (!member || member.open.length === 0) return []
+    const sumFirst = (n: number) => member.open.slice(0, n).reduce((s, o) => s + o.remaining, 0)
+    const out: { label: string; value: number }[] = [{ label: "১ মাস", value: sumFirst(1) }]
+    if (member.due > 0 && member.due !== sumFirst(1)) out.push({ label: "সব বকেয়া", value: member.due })
+    for (const n of [2, 3, 6]) if (member.open.length >= n) out.push({ label: `${toBn(n)} মাস`, value: sumFirst(n) })
+    const seen = new Set<number>()
+    return out.filter((q) => (seen.has(q.value) ? false : (seen.add(q.value), true)))
+  }, [member])
 
   function pickMember(id: number) {
     const m = members.find((x) => x.id === id)!
     setMemberId(id)
-    setSelected(m.open[0] ? [m.open[0].month] : [])
     setAmount(m.open[0] ? String(m.open[0].remaining) : "")
+    setManual(false)
+    setSelected([])
     setError(undefined)
   }
 
@@ -68,16 +107,24 @@ export function PayForm({ members, today, preselectId }: { members: PayMember[];
     if (!member) return
     setError(undefined)
     const next = selected.includes(month) ? selected.filter((m) => m !== month) : [...selected, month]
-    // keep chronological order (open[] is already sorted)
     const ordered = member.open.map((o) => o.month).filter((m) => next.includes(m))
     setSelected(ordered)
     if (ordered.length === 1) setAmount(String(member.open.find((o) => o.month === ordered[0])!.remaining))
   }
 
+  function startManual() {
+    if (!member) return
+    setManual(true)
+    const first = plan.items[0]?.forMonth ?? member.open[0]?.month
+    setSelected(first ? [first] : [])
+    if (first) setAmount(String(member.open.find((o) => o.month === first)!.remaining))
+  }
+
   function reset() {
     setMemberId(null)
-    setSelected([])
     setAmount("")
+    setManual(false)
+    setSelected([])
     setMethod("cash")
     setTrxId("")
     setNote("")
@@ -89,9 +136,11 @@ export function PayForm({ members, today, preselectId }: { members: PayMember[];
 
   function save() {
     if (!member) return
-    if (items.length === 0) return setError("অন্তত একটি মাস বাছাই করুন।")
-    if (items.some((i) => !Number.isInteger(i.amount) || i.amount <= 0)) return setError("টাকার পরিমাণ সঠিক নয়।")
+    if (plan.items.length === 0) return setError(manual ? "অন্তত একটি মাস বাছাই করুন।" : "টাকার পরিমাণ লিখুন।")
+    if (plan.leftover > 0) return setError(`${taka(plan.leftover)} বেশি হয়ে যাচ্ছে — মেয়াদের সব মাস পরিশোধের পরও বাকি থাকে।`)
+    if (plan.items.some((i) => !Number.isInteger(i.amount) || i.amount <= 0)) return setError("টাকার পরিমাণ সঠিক নয়।")
     setError(undefined)
+    const items = plan.items.map(({ forMonth, amount: a }) => ({ forMonth, amount: a }))
     const payloadKey = JSON.stringify([member.id, items, paidOn, method])
     if (!refs.current.has(payloadKey)) refs.current.set(payloadKey, newRef())
     const clientRef = refs.current.get(payloadKey) ?? null
@@ -166,46 +215,163 @@ export function PayForm({ members, today, preselectId }: { members: PayMember[];
     )
   }
 
-  // ── Step 1: pick member ──
+  // ── Step 1: pick a member (those who owe something first) ──
   if (!member) {
+    const owing = members.filter((m) => owesNow(m, thisMonth))
+    const list = listMode === "owing" ? owing : members
     return (
-      <MemberPicker
-        members={members.map((m) => ({
-          id: m.id,
-          no: m.no,
-          name: m.name,
-          right: m.due > 0 ? <span className="shrink-0 text-sm font-semibold text-destructive">{taka(m.due)}</span> : null,
-        }))}
-        onSelect={pickMember}
-      />
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2" role="tablist">
+          {(
+            [
+              ["owing", `টাকা বাকি (${toBn(owing.length)})`],
+              ["all", `সবাই (${toBn(members.length)})`],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              role="tab"
+              aria-selected={listMode === mode}
+              onClick={() => setListMode(mode)}
+              className={cn(
+                "h-11 rounded-xl border-2 text-base",
+                listMode === mode ? "border-brand-navy bg-brand-navy font-semibold text-white" : "bg-white",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {list.length === 0 ? (
+          <p className="rounded-xl bg-green-50 p-4 text-center text-base text-green-900">সবার এই মাস পর্যন্ত চাঁদা পরিশোধিত। 🎉</p>
+        ) : (
+          <MemberPicker
+            members={list.map((m) => ({
+              id: m.id,
+              no: m.no,
+              name: m.name,
+              right:
+                m.due > 0 ? (
+                  <span className="shrink-0 text-right text-sm font-semibold text-destructive">বকেয়া {taka(m.due)}</span>
+                ) : m.open[0]?.month === thisMonth ? (
+                  <span className="shrink-0 text-sm text-amber-700">এই মাস {taka(m.open[0].remaining)}</span>
+                ) : (
+                  <span className="shrink-0 text-sm text-green-700">✓ পরিশোধিত</span>
+                ),
+            }))}
+            onSelect={pickMember}
+          />
+        )}
+      </div>
     )
   }
 
-  // ── Step 2–4: months, amount, method, save ──
+  // ── Step 2: how much, how, save ──
+  const overdue = member.open.filter((o) => o.isDue)
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-2 rounded-xl border bg-white p-3">
-        <div className="min-w-0">
-          <p className="truncate text-lg font-semibold">
+      <button
+        type="button"
+        onClick={() => setMemberId(null)}
+        className="flex w-full items-center justify-between gap-2 rounded-xl border bg-white p-3 text-left active:bg-muted"
+      >
+        <span className="min-w-0">
+          <span className="block truncate text-lg font-semibold">
             {toBn(member.no)}. {member.name}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            শেয়ার {toBn(member.shares)} · বকেয়া{" "}
-            <span className={member.due > 0 ? "font-semibold text-destructive" : ""}>{taka(member.due)}</span>
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setMemberId(null)}>
-          পরিবর্তন
-        </Button>
-      </div>
+          </span>
+          <span className="block text-sm text-muted-foreground">
+            {toBn(member.shares)} শেয়ার · মাসে {taka(member.shares * sharePrice)}
+            {member.due > 0 ? (
+              <span className="font-semibold text-destructive">
+                {" "}
+                · বকেয়া {taka(member.due)} ({overdue.map((o) => monthLabel(o.month)).join(", ")})
+              </span>
+            ) : (
+              " · কোনো বকেয়া নেই"
+            )}
+          </span>
+        </span>
+        <span className="shrink-0 text-sm text-brand-navy underline">বদলান</span>
+      </button>
 
       {member.open.length === 0 ? (
         <p className="rounded-lg bg-green-50 p-3 text-base text-green-900">এই সদস্যের মেয়াদের সব মাসের চাঁদা পরিশোধিত।</p>
+      ) : !manual ? (
+        <>
+          <section className="space-y-2">
+            <Field label="কত টাকা দিলেন?" htmlFor="amount">
+              <Input
+                id="amount"
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => {
+                  setAmount(e.target.value)
+                  setError(undefined)
+                }}
+                onFocus={(e) => e.target.select()}
+                className="h-16 text-3xl font-bold"
+              />
+            </Field>
+            <div className="flex flex-wrap gap-2">
+              {quick.map((q) => (
+                <button
+                  key={q.label}
+                  type="button"
+                  onClick={() => setAmount(String(q.value))}
+                  aria-pressed={toInt(amount) === q.value}
+                  className={cn(
+                    "h-11 rounded-full border-2 px-3 text-sm",
+                    toInt(amount) === q.value ? "border-brand-green bg-brand-green font-semibold text-white" : "bg-white",
+                  )}
+                >
+                  {q.label} · {taka(q.value)}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {plan.items.length ? (
+            <section className="rounded-xl border bg-secondary/60 p-3">
+              <p className="mb-2 text-sm text-muted-foreground">এই টাকা যে মাসগুলোতে জমা হবে (পুরনো মাস আগে):</p>
+              <ul className="space-y-1">
+                {plan.items.map((i) => (
+                  <li key={i.forMonth} className="flex items-center justify-between gap-2 text-base">
+                    <span>{monthLabel(i.forMonth)}</span>
+                    <span className="flex items-center gap-2">
+                      <b>{taka(i.amount)}</b>
+                      <span
+                        className={cn(
+                          "rounded-md px-2 py-0.5 text-xs",
+                          i.full ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-900",
+                        )}
+                      >
+                        {i.full ? "পুরো" : "আংশিক"}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {plan.leftover > 0 ? (
+                <p className="mt-2 text-sm font-semibold text-destructive">{taka(plan.leftover)} বেশি — মেয়াদের সব মাসের চাঁদার চেয়ে বেশি।</p>
+              ) : null}
+            </section>
+          ) : null}
+
+          <button type="button" onClick={startManual} className="flex min-h-10 items-center gap-1 text-sm text-brand-navy underline">
+            <ChevronDown className="size-4" /> মাস নিজে বাছাই করুন
+          </button>
+        </>
       ) : (
-        <section className="space-y-2">
-          <p className="text-base font-medium">কোন মাসের? <span className="text-sm text-muted-foreground">(একাধিক মাস বাছাই করা যায়)</span></p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {member.open.slice(0, 18).map((o) => {
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-base font-medium">কোন মাসের?</p>
+            <button type="button" onClick={() => setManual(false)} className="text-sm text-brand-navy underline">
+              ← টাকা দিয়ে স্বয়ংক্রিয়ভাবে
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {member.open.slice(0, 12).map((o) => {
               const on = selected.includes(o.month)
               return (
                 <button
@@ -214,12 +380,12 @@ export function PayForm({ members, today, preselectId }: { members: PayMember[];
                   onClick={() => toggleMonth(o.month)}
                   aria-pressed={on}
                   className={cn(
-                    "min-h-14 shrink-0 rounded-xl border-2 px-3 py-1 text-left",
+                    "min-h-14 rounded-xl border-2 px-3 py-1 text-left",
                     on ? "border-brand-navy bg-brand-navy text-white" : "bg-white",
                     !on && o.isDue && "border-red-300",
                   )}
                 >
-                  <span className="block text-sm font-semibold whitespace-nowrap">{monthLabel(o.month)}</span>
+                  <span className="block text-sm font-semibold">{monthLabel(o.month)}</span>
                   <span className={cn("block text-xs", on ? "text-white/80" : o.isDue ? "text-destructive" : "text-muted-foreground")}>
                     {taka(o.remaining)}
                   </span>
@@ -227,74 +393,71 @@ export function PayForm({ members, today, preselectId }: { members: PayMember[];
               )
             })}
           </div>
+          {selected.length === 1 ? (
+            <Field label="টাকার পরিমাণ" htmlFor="amount-manual">
+              <Input id="amount-manual" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-14 text-2xl font-semibold" />
+            </Field>
+          ) : null}
         </section>
       )}
 
-      {selected.length === 1 ? (
-        <Field label="টাকার পরিমাণ" htmlFor="amount">
-          <Input
-            id="amount"
-            inputMode="numeric"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="h-14 text-2xl font-semibold"
-          />
-        </Field>
-      ) : multi ? (
-        <div className="rounded-xl bg-secondary p-3">
-          <p className="text-sm text-muted-foreground">{toBn(selected.length)} মাস — প্রতি মাসের পুরো বকেয়া</p>
-          <p className="text-2xl font-bold text-brand-navy">মোট {taka(total)}</p>
-        </div>
+      {member.open.length ? (
+        <>
+          <section className="space-y-2">
+            <p className="text-base font-medium">কীভাবে দিলেন?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {METHODS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMethod(m)}
+                  aria-pressed={method === m}
+                  className={cn(
+                    "h-12 rounded-xl border-2 text-base",
+                    method === m ? "border-brand-navy bg-brand-navy font-semibold text-white" : "bg-white",
+                  )}
+                >
+                  {METHOD_LABELS[m]}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {method !== "cash" ? (
+            <Field label="ট্রানজেকশন আইডি (ঐচ্ছিক)" htmlFor="trx">
+              <Input id="trx" value={trxId} onChange={(e) => setTrxId(e.target.value)} autoCapitalize="characters" />
+            </Field>
+          ) : null}
+
+          <details className="rounded-xl border bg-white px-3 py-2">
+            <summary className="min-h-10 cursor-pointer py-2 text-base text-muted-foreground">
+              তারিখ ({paidOn === today ? "আজ" : paidOn}) / নোট
+            </summary>
+            <div className="space-y-3 pb-2">
+              <Field label="জমার তারিখ" htmlFor="paidOn">
+                <Input id="paidOn" type="date" value={paidOn} max={today} onChange={(e) => setPaidOn(e.target.value)} />
+              </Field>
+              <Field label="নোট (ঐচ্ছিক)" htmlFor="note">
+                <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
+              </Field>
+            </div>
+          </details>
+
+          <FormError message={error} />
+          <Button size="xl" onClick={save} disabled={pending || plan.items.length === 0 || plan.leftover > 0}>
+            {pending ? (
+              <>
+                <Loader2 className="size-5 animate-spin" /> সংরক্ষণ হচ্ছে…
+              </>
+            ) : (
+              <>
+                সংরক্ষণ করুন · {taka(total)}
+                {plan.items.length > 1 ? ` · ${toBn(plan.items.length)} মাস` : ""}
+              </>
+            )}
+          </Button>
+        </>
       ) : null}
-
-      <section className="space-y-2">
-        <p className="text-base font-medium">কীভাবে দিয়েছেন?</p>
-        <div className="grid grid-cols-3 gap-2">
-          {METHODS.map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMethod(m)}
-              aria-pressed={method === m}
-              className={cn(
-                "h-12 rounded-xl border-2 text-base",
-                method === m ? "border-brand-navy bg-brand-navy font-semibold text-white" : "bg-white",
-              )}
-            >
-              {METHOD_LABELS[m]}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {method !== "cash" ? (
-        <Field label="ট্রানজেকশন আইডি (ঐচ্ছিক)" htmlFor="trx">
-          <Input id="trx" value={trxId} onChange={(e) => setTrxId(e.target.value)} autoCapitalize="characters" />
-        </Field>
-      ) : null}
-
-      <details className="rounded-xl border bg-white px-3 py-2">
-        <summary className="min-h-10 cursor-pointer py-2 text-base text-muted-foreground">তারিখ / নোট পরিবর্তন</summary>
-        <div className="space-y-3 pb-2">
-          <Field label="জমার তারিখ" htmlFor="paidOn">
-            <Input id="paidOn" type="date" value={paidOn} max={today} onChange={(e) => setPaidOn(e.target.value)} />
-          </Field>
-          <Field label="নোট (ঐচ্ছিক)" htmlFor="note">
-            <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
-          </Field>
-        </div>
-      </details>
-
-      <FormError message={error} />
-      <Button size="xl" onClick={save} disabled={pending || items.length === 0}>
-        {pending ? (
-          <>
-            <Loader2 className="size-5 animate-spin" /> সংরক্ষণ হচ্ছে…
-          </>
-        ) : (
-          <>সংরক্ষণ করুন · {taka(total)}</>
-        )}
-      </Button>
     </div>
   )
 }
