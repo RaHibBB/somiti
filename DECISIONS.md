@@ -259,3 +259,11 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - New table `payment_reports` (migrations `0010`, `0011`): no deletes; reviewed exactly once (pending → approved/rejected, only review columns change, rejection needs a reason); method can't be cash; **the same TrxID can't be reported twice** (case/space-insensitive unique index, except after a rejection) and can't reuse a TrxID already on a valid payment.
 - **মাসিক হিসাব WhatsApp গ্রুপে পাঠান** (admin home card): one tap opens WhatsApp with a ready message — this month's collection vs expected, x/y paid, everyone who still owes (name + amount, since accounts are transparent to all members), fund total (cash/invested) and a link to the printable monthly report. wa.me without a number, so the admin picks the group.
 - Report links use the shared `appUrl()` (APP_URL → Vercel production domain → Host header only in dev).
+
+## Google Sheet mirror live (2026-10-04)
+
+- Mirror target = the samiti's existing sheet (`সমিতি_হিসাব_খাতা_2`, the one imported from), as the spec intended. The app added 4 tabs it owns — `Members`, `Payments`, `Transactions`, `Monthly Summary` — each with the read-only note in row 1. The original Bengali tabs are left untouched as history.
+- Google Cloud project `somiti-bamon-sundor`, Sheets API enabled, service account `somiti-sheet-bamon-sundor@…iam.gserviceaccount.com` shared on the sheet as **Editor**; general access "Anyone with the link → Viewer".
+- Vercel env: `GOOGLE_SERVICE_ACCOUNT_JSON` (Secret, pasted by the owner) and `SHEET_ID`. The key file stays only on the admin's PC as `service-account.json` (gitignored, plus a pattern for any downloaded `*-<12 hex>.json` key).
+- First full rewrite verified against Neon: 32 members, 17 payments, ৳১৫,০০০ — identical. From now on each write updates the sheet within seconds; the daily cron retries failures and Sundays rewrite everything.
+- The cron route now returns `{ ok:false, error }` (HTTP 502) instead of a bare 500, which is how the "API not enabled" and "not shared as Editor" problems were diagnosed.
