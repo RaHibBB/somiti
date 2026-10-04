@@ -54,3 +54,9 @@ next-env.d.ts
 # Google service account key (never commit)
 /service-account*.json
 /*-key*.json
+
+# Any Google Cloud key JSON downloaded into the project root
+/*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json
+
+.vercel
+.env*

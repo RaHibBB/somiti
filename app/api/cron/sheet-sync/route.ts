@@ -27,8 +27,15 @@ export async function GET(request: Request) {
   if (!target) return Response.json({ ok: false, proposalsClosed, error: "Google Sheets is not configured" }, { status: 500 })
 
   const db = getDb()
-  const flushed = await flushOutbox(db, target, { includeFailed: true })
   const full = new URL(request.url).searchParams.get("full") === "1" || isSundayInDhaka()
-  if (full) await fullRewrite(db, target)
-  return Response.json({ ok: true, proposalsClosed, flushed, fullRewrite: full })
+  try {
+    const flushed = await flushOutbox(db, target, { includeFailed: true })
+    if (full) await fullRewrite(db, target)
+    return Response.json({ ok: true, proposalsClosed, flushed, fullRewrite: full })
+  } catch (err) {
+    // e.g. 403 when the sheet isn't shared with the service account as Editor.
+    console.error("sheet sync failed", err)
+    const message = (err as { message?: string })?.message ?? String(err)
+    return Response.json({ ok: false, proposalsClosed, error: message.slice(0, 300) }, { status: 502 })
+  }
 }
