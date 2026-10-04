@@ -138,3 +138,21 @@ export function upcomingReminderMessage(input: { name: string; month: string; am
 export function noticeMessage(input: { title: string; body: string; url: string }): string {
   return [`📢 ${SAMITI_NAME}`, "", `*${input.title}*`, input.body, "", `সব নোটিশ: ${input.url}`].join("\n")
 }
+
+/** First-login details for a member (login id + temporary password) — sent by an admin on WhatsApp. */
+export function inviteMessage(input: {
+  name: string
+  memberNo: number
+  phone: string | null
+  pin: string
+  loginUrl: string
+}): string {
+  return [
+    `আসসালামু আলাইকুম, ${input.name}।`,
+    `${SAMITI_NAME}-এর ওয়েবসাইটে আপনার লগইন তথ্য:`,
+    `লিংক: ${input.loginUrl}`,
+    `লগইন: ${input.phone ? `${toBn(input.phone)} (অথবা সদস্য নং ${toBn(input.memberNo)})` : `সদস্য নং ${toBn(input.memberNo)}`}`,
+    `অস্থায়ী পাসওয়ার্ড: ${toBn(input.pin)}`,
+    "প্রথমবার ঢুকলে নিজের একটি নতুন পাসওয়ার্ড দিতে হবে। পাসওয়ার্ড কাউকে বলবেন না।",
+  ].join("\n")
+}

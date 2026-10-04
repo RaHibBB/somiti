@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Field, FormError, SubmitButton } from "@/components/forms/form-bits"
 import { NativeSelect } from "@/components/forms/native-select"
 import { fromBn, taka, toBn } from "@/lib/format"
+import { inviteMessage, waLink } from "@/lib/whatsapp"
 import { cancelMemberAction, changeSharesAction, createMemberAction, resetPinAction, updateMemberAction } from "./actions"
 
 export type MemberDefaults = {
@@ -63,7 +64,11 @@ function DetailFields({ d }: { d: MemberDefaults }) {
   )
 }
 
-export function PinReveal({ name, pin }: { name: string; pin: string }) {
+export function PinReveal({ name, pin, memberNo, phone }: { name: string; pin: string; memberNo?: number; phone?: string | null }) {
+  const wa =
+    memberNo === undefined
+      ? null
+      : waLink(phone ?? null, inviteMessage({ name, memberNo, phone: phone ?? null, pin, loginUrl: `${window.location.origin}/login` }))
   return (
     <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-center">
       <p className="text-base">{name}-এর অস্থায়ী পাসওয়ার্ড</p>
@@ -71,6 +76,16 @@ export function PinReveal({ name, pin }: { name: string; pin: string }) {
       <p className="text-sm text-amber-900">
         এই পাসওয়ার্ড এখনই সদস্যকে জানিয়ে দিন — আর দেখানো হবে না। প্রথম লগইনে সদস্য নিজের পাসওয়ার্ড দেবেন।
       </p>
+      {wa ? (
+        <a
+          href={wa}
+          target="_blank"
+          rel="noopener"
+          className="mt-3 flex h-12 items-center justify-center rounded-xl bg-[#25D366] text-base font-semibold text-white"
+        >
+          WhatsApp-এ পাঠান
+        </a>
+      ) : null}
     </div>
   )
 }
@@ -80,7 +95,7 @@ export function NewMemberForm({ defaults, startMonth }: { defaults: MemberDefaul
   if (state?.ok) {
     return (
       <div className="space-y-4">
-        <PinReveal name={state.data.name} pin={state.data.pin} />
+        <PinReveal name={state.data.name} pin={state.data.pin} memberNo={state.data.memberNo} phone={state.data.phone} />
         <Link href={`/admin/members/${state.data.id}`} className="block rounded-xl border bg-white py-3 text-center text-base">
           সদস্যের পাতায় যান
         </Link>
@@ -158,9 +173,9 @@ export function SharesForm({ id, current, defaultMonth }: { id: number; current:
   )
 }
 
-export function ResetPinForm({ id, name }: { id: number; name: string }) {
+export function ResetPinForm({ id, name, memberNo, phone }: { id: number; name: string; memberNo: number; phone: string | null }) {
   const [state, action] = useActionState(resetPinAction, undefined)
-  if (state?.ok) return <PinReveal name={name} pin={state.data.pin} />
+  if (state?.ok) return <PinReveal name={name} pin={state.data.pin} memberNo={memberNo} phone={phone} />
   return (
     <form
       action={action}

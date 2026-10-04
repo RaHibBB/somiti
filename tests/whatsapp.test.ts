@@ -107,3 +107,14 @@ describe("no contradictory 'no dues' lines", () => {
     expect(receiptMessage({ name: "ক", receipts: [r], paidOn: "2026-10-04", dueAfter: 0, currentOpenAfter: 0 })).toContain("কোনো বকেয়া নেই")
   })
 })
+
+describe("login details message", () => {
+  it("tells a member how to log in the first time", async () => {
+    const { inviteMessage } = await import("@/lib/whatsapp")
+    const withPhone = inviteMessage({ name: "রহিম", memberNo: 7, phone: "01712345678", pin: "482915", loginUrl: "https://x.test/login" })
+    expect(withPhone).toContain("https://x.test/login")
+    expect(withPhone).toContain("লগইন: ০১৭১২৩৪৫৬৭৮ (অথবা সদস্য নং ৭)")
+    expect(withPhone).toContain("অস্থায়ী পাসওয়ার্ড: ৪৮২৯১৫")
+    expect(inviteMessage({ name: "ক", memberNo: 21, phone: null, pin: "123987", loginUrl: "u" })).toContain("লগইন: সদস্য নং ২১")
+  })
+})

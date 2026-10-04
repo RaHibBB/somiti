@@ -103,7 +103,7 @@ export default async function AdminMemberPage({ params }: PageProps<"/admin/memb
                   ? "সদস্য এখনো নিজের পাসওয়ার্ড সেট করেননি।"
                   : `যোগদান: ${formatDate(m.joinedOn)}`}
             </p>
-            <ResetPinForm id={m.id} name={m.nameBn} />
+            <ResetPinForm id={m.id} name={m.nameBn} memberNo={m.memberNo} phone={m.phone} />
           </Section>
           {m.id !== me.id ? (
             <Section title="সদস্যপদ বাতিল">

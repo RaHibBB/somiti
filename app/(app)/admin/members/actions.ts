@@ -36,12 +36,12 @@ function refresh() {
   revalidatePath("/", "layout")
 }
 
-export async function createMemberAction(_: State<{ id: number; pin: string; name: string }>, fd: FormData) {
+export async function createMemberAction(_: State<{ id: number; pin: string; name: string; memberNo: number; phone: string | null }>, fd: FormData) {
   return adminAction(async (admin) => {
     const input = createSchema.parse(formObject(fd))
     const { member, pin } = await createMember(getDb(), admin.id, input)
     refresh()
-    return { id: member.id, pin, name: member.nameBn }
+    return { id: member.id, pin, name: member.nameBn, memberNo: member.memberNo, phone: member.phone }
   })
 }
 

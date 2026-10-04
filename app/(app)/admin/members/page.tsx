@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ChevronRight, UserPlus } from "lucide-react"
+import { ChevronRight, Send, UserPlus } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
@@ -19,6 +19,12 @@ export default async function AdminMembersPage() {
       >
         সদস্য ব্যবস্থাপনা
       </PageTitle>
+      <Link
+        href="/admin/invite"
+        className="mb-3 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white"
+      >
+        <Send className="size-5" /> সবাইকে লগইন তথ্য WhatsApp-এ পাঠান
+      </Link>
       <ul className="divide-y overflow-hidden rounded-xl border bg-white">
         {snap.members.map(({ member: m, sharesNow, due }) => (
           <li key={m.id}>

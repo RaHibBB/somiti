@@ -333,3 +333,7 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - If the samiti later has an official logo, replace the drawing in `lib/logo-art.tsx` (or swap the component's content) and re-run the script — every place above follows.
 
 - 2026-10-04: member ২১ (নাঈম) had been given a password by Shuvo through the app, which cannot be read back (passwords are stored hashed and shown once). At Rahib's request a new temporary password was generated for ২১ with the same steps as the admin "পাসওয়ার্ড রিসেট" button (new hash, must change at first login, logged out everywhere, `pin_reset` in the audit log under Rahib). Shuvo's earlier password for ২১ no longer works.
+
+## লগইন তথ্য WhatsApp-এ পাঠানো (/admin/invite)
+- সত্যিকারের "এক ক্লিকে সবাইকে" পাঠানো সম্ভব নয় (WhatsApp Business API পেইড)। তাই অ্যাডমিন সদস্য বাছাই করে নতুন অস্থায়ী পাসওয়ার্ড বানান, তারপর "পরের জন" বাটনে একে একে wa.me লিংক খোলেন (মেসেজ তৈরি থাকে)।
+- যাঁরা নিজের পাসওয়ার্ড দিয়ে ফেলেছেন তাঁদের স্পর্শ করা হয় না। পাসওয়ার্ড শুধু ওই পাতার মেমোরিতে থাকে; অডিট লগে `invite_create` (পাসওয়ার্ড ছাড়া)।
