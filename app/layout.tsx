@@ -12,6 +12,8 @@ const bengali = Noto_Sans_Bengali({
 export const metadata: Metadata = {
   title: "পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি",
   description: "সমিতির হিসাব — মীরসরাই, চট্টগ্রাম",
+  // Public to anyone with the link, but kept out of search results.
+  robots: { index: false, follow: false },
 }
 
 export const viewport: Viewport = {

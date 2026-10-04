@@ -9,12 +9,12 @@ export const VIEW_COOKIE = "samiti_view"
 
 export type ViewMode = "admin" | "member"
 
-export async function viewMode(me: Pick<Member, "role">): Promise<ViewMode> {
-  if (me.role !== "admin") return "member"
+export async function viewMode(me: Pick<Member, "role"> | null): Promise<ViewMode> {
+  if (me?.role !== "admin") return "member"
   return (await cookies()).get(VIEW_COOKIE)?.value === "member" ? "member" : "admin"
 }
 
 /** Show admin buttons/sections? (admin role AND admin view selected) */
-export async function showAdminUi(me: Pick<Member, "role">): Promise<boolean> {
+export async function showAdminUi(me: Pick<Member, "role"> | null): Promise<boolean> {
   return (await viewMode(me)) === "admin"
 }

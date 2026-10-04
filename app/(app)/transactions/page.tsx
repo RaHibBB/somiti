@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { FileDown, ImageIcon, Plus } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { loadFund, loadTransactions } from "@/lib/data"
 import { formatDate, taka, TXN_TYPE_LABELS } from "@/lib/format"
@@ -13,7 +13,7 @@ export const metadata = { title: "আয়-ব্যয় — সমিতি"
 const INFLOW: TxnType[] = ["business_income", "investment_return", "bank_profit"]
 
 export default async function TransactionsPage() {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const [rows, fund] = await Promise.all([loadTransactions(), loadFund()])
   return (

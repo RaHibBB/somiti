@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { getDb } from "@/lib/db"
 import { notices } from "@/lib/db/schema"
 import { formatDate } from "@/lib/format"
@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format"
 export const metadata = { title: "নোটিশ — সমিতি" }
 
 export default async function NoticesPage() {
-  await requireMember()
+  await getViewer()
   const rows = await getDb().select().from(notices).where(eq(notices.status, "active")).orderBy(desc(notices.createdAt))
   return (
     <div className="space-y-3">

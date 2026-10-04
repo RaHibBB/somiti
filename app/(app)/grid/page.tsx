@@ -1,5 +1,5 @@
 import { PageTitle } from "@/components/layout/page-title"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
 import { monthLabel, monthShort, taka, toBn } from "@/lib/format"
 import { monthOf, type MonthStatus } from "@/lib/ledger"
@@ -16,7 +16,7 @@ const CELL: Record<MonthStatus, { cls: string; mark: string; label: string }> = 
 }
 
 export default async function GridPage() {
-  await requireMember()
+  await getViewer()
   const snap = await getSnapshot()
   const months = snap.members[0]?.lines.map((l) => l.month) ?? []
   const thisMonth = monthOf(snap.today)

@@ -7,10 +7,11 @@ import { Field, FormError, SubmitButton } from "@/components/forms/form-bits"
 import { PasswordInput } from "@/components/forms/password-input"
 import { loginAction } from "@/lib/auth/actions"
 
-export function LoginForm() {
+export function LoginForm({ next = "/" }: { next?: string }) {
   const [state, action] = useActionState(loginAction, undefined)
   return (
     <form action={action} className="space-y-4">
+      <input type="hidden" name="next" value={next} />
       <Field label="ইমেইল, মোবাইল নম্বর অথবা সদস্য নম্বর" htmlFor="identifier">
         <Input
           key={state?.identifier ?? ""}

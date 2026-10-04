@@ -58,3 +58,16 @@ describe("passwords", () => {
     }
   })
 })
+
+describe("post-login redirect", () => {
+  it("only allows same-site paths", async () => {
+    const { safeNext } = await import("@/lib/auth/next-path")
+    expect(safeNext("/report")).toBe("/report")
+    expect(safeNext("/admin/pay?member=3")).toBe("/admin/pay?member=3")
+    expect(safeNext("//evil.com")).toBe("/")
+    expect(safeNext("https://evil.com")).toBe("/")
+    expect(safeNext("/\\evil.com")).toBe("/") // browsers treat "/\" like "//"
+    expect(safeNext("/members/3")).toBe("/members/3")
+    expect(safeNext(undefined)).toBe("/")
+  })
+})

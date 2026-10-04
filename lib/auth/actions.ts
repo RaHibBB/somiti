@@ -14,6 +14,7 @@ import { sendMail } from "@/lib/mail"
 import { UserError } from "@/lib/services/errors"
 import { createResetToken, RESET_TTL_MINUTES, resetPasswordWithToken } from "@/lib/services/password-reset"
 import { clearLoginAttempts, finishLock, reserveLoginAttempt } from "./attempts"
+import { safeNext } from "./next-path"
 import { isValidPassword, isWeakPassword, LOCK_MINUTES, parseIdentifier, PASSWORD_MAX } from "./pin"
 import { clearSessionCookie, requireMember, setSessionCookie } from "./session"
 
@@ -69,7 +70,7 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
 
   await clearLoginAttempts(db, member.id)
   await setSessionCookie(member)
-  redirect(member.mustChangePin ? "/settings/pin" : "/")
+  redirect(member.mustChangePin ? "/settings/pin" : safeNext(formData.get("next")))
 }
 
 export async function logoutAction() {

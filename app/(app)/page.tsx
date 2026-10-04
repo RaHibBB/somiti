@@ -2,14 +2,14 @@ import Link from "next/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot, loadFund, loadLatestNotices } from "@/lib/data"
 import { getDb } from "@/lib/db"
 import { paymentReports, proposals, votes } from "@/lib/db/schema"
 import { closeExpiredProposals } from "@/lib/services/proposals"
 import { and, count, eq, notExists } from "drizzle-orm"
-import { CalendarClock, HandCoins, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
+import { CalendarClock, HandCoins, LogIn, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
 import { appUrl } from "@/lib/app-url"
 import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
 import { formatDate, monthLabel, taka, toBn } from "@/lib/format"
@@ -17,7 +17,7 @@ import { dueReminder, monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 
 export default async function DashboardPage() {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const db = getDb()
   await closeExpiredProposals(db)
@@ -29,21 +29,24 @@ export default async function DashboardPage() {
       .select({ id: proposals.id, title: proposals.title })
       .from(proposals)
       .where(
-        and(
-          eq(proposals.status, "open"),
-          notExists(
-            db
-              .select({ one: votes.id })
-              .from(votes)
-              .where(and(eq(votes.proposalId, proposals.id), eq(votes.memberId, me.id))),
-          ),
-        ),
+        me
+          ? and(
+              eq(proposals.status, "open"),
+              notExists(
+                db
+                  .select({ one: votes.id })
+                  .from(votes)
+                  .where(and(eq(votes.proposalId, proposals.id), eq(votes.memberId, me.id))),
+              ),
+            )
+          : eq(proposals.status, "open"),
       ),
     db.select({ n: count() }).from(paymentReports).where(eq(paymentReports.status, "pending")),
   ])
-  const entry = snap.members.find((m) => m.member.id === me.id)!
+  // Visitors (not logged in) see everything except a personal "my account" section.
+  const entry = me ? snap.members.find((m) => m.member.id === me.id) : undefined
   const thisMonth = monthOf(snap.today)
-  const reminder = dueReminder(entry.lines, snap.today, snap.settings.dueDay)
+  const reminder = entry ? dueReminder(entry.lines, snap.today, snap.settings.dueDay) : null
   // Admin summary: this month's collection and today's receipts (for handing over cash).
   const active = snap.members.filter((m) => m.member.status === "active")
   const monthLines = active.map((m) => m.lines.find((l) => l.month === thisMonth)).filter((l) => l !== undefined)
@@ -70,12 +73,26 @@ export default async function DashboardPage() {
         reportUrl: `${await appUrl()}/print/month/${thisMonth.slice(0, 7)}`,
       })
     : ""
-  const current = entry.lines.find((l) => l.month === thisMonth)
+  const current = entry?.lines.find((l) => l.month === thisMonth)
   const investedPct = fund.total > 0 ? 100 - fund.cashPct : 0
 
   return (
     <div className="space-y-5">
-      <PageTitle>আসসালামু আলাইকুম</PageTitle>
+      <PageTitle>{me ? "আসসালামু আলাইকুম" : "স্বাগতম"}</PageTitle>
+
+      {!me ? (
+        <div className="space-y-3 rounded-2xl bg-brand-navy p-4 text-white">
+          <p className="text-base leading-relaxed">
+            সমিতির সব হিসাব এখানে সবার জন্য খোলা — কে কত দিয়েছেন, বকেয়া, তহবিল, আয়-ব্যয়। দেখতে লগইন লাগে না।
+          </p>
+          <Link
+            href="/login"
+            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-white text-base font-semibold text-brand-navy"
+          >
+            <LogIn className="size-5" /> লগইন — নিজের হিসাব, জমা জানানো ও ভোট
+          </Link>
+        </div>
+      ) : null}
 
       {adminUi ? (
         <div className="grid grid-cols-2 gap-2">
@@ -120,7 +137,8 @@ export default async function DashboardPage() {
         </Link>
       ) : null}
 
-      {adminUi ? (
+      {/* This month's collection — visible to everyone (transparency); cash-handling extras for admins. */}
+      {monthLines.length ? (
         <section className="space-y-3 rounded-2xl border bg-white p-4">
           <div className="flex items-baseline justify-between">
             <h2 className="text-lg font-semibold text-brand-navy">{monthLabel(thisMonth)}-এর চাঁদা</h2>
@@ -134,6 +152,8 @@ export default async function DashboardPage() {
           <p className="text-base">
             আদায় <b>{taka(monthPaid)}</b> / {taka(monthExpected)}
           </p>
+          {adminUi ? (
+          <>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-secondary p-3">
               <p className="text-sm text-muted-foreground">আজ জমা ({toBn(todays.length)}টি)</p>
@@ -154,6 +174,12 @@ export default async function DashboardPage() {
           >
             <MessageCircle className="size-5" /> মাসিক হিসাব WhatsApp গ্রুপে পাঠান
           </a>
+          </>
+          ) : (
+            <Link href="/grid" className="flex h-11 items-center justify-center gap-1 rounded-xl bg-secondary text-base text-brand-navy">
+              {owingCount > 0 ? `বকেয়া আছে ${toBn(owingCount)} জনের` : "কারো বকেয়া নেই"} — গ্রিডে দেখুন <ChevronRight className="size-5" />
+            </Link>
+          )}
         </section>
       ) : null}
 
@@ -165,13 +191,14 @@ export default async function DashboardPage() {
         >
           <Vote className="size-7 shrink-0" />
           <span className="min-w-0 flex-1">
-            <span className="block text-sm">আপনার ভোট দরকার</span>
+            <span className="block text-sm">{me ? "আপনার ভোট দরকার" : "ভোট চলছে"}</span>
             <span className="block truncate text-base font-semibold">{p.title}</span>
           </span>
           <ChevronRight className="size-5" />
         </Link>
       ))}
 
+      {entry ? (
       <section className="space-y-2">
         <div
           className={cn(
@@ -221,6 +248,7 @@ export default async function DashboardPage() {
           আমার পুরো হিসাব দেখুন <ChevronRight className="size-5" />
         </Link>
       </section>
+      ) : null}
 
       <section className="space-y-3 rounded-2xl border bg-white p-4">
         <h2 className="text-lg font-semibold text-brand-navy">সমিতির তহবিল</h2>

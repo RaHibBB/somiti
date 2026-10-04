@@ -3,7 +3,7 @@ import { ChevronRight, Plus } from "lucide-react"
 import { and, eq, inArray } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { ProposalBadge } from "@/components/proposal-badge"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getDb } from "@/lib/db"
 import { votes } from "@/lib/db/schema"
@@ -13,12 +13,12 @@ import { closeExpiredProposals, listProposals } from "@/lib/services/proposals"
 export const metadata = { title: "প্রস্তাব ও ভোট — সমিতি" }
 
 export default async function ProposalsPage() {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const db = getDb()
   await closeExpiredProposals(db)
   const list = await listProposals(db)
-  const mine = list.length
+  const mine = me && list.length
     ? await db
         .select({ proposalId: votes.proposalId })
         .from(votes)
@@ -49,7 +49,7 @@ export default async function ProposalsPage() {
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <ProposalBadge status={p.status} />
-                  {p.status === "open" ? (
+                  {p.status === "open" && me ? (
                     voted.has(p.id) ? (
                       <span className="text-sm text-green-700">✓ আপনি ভোট দিয়েছেন</span>
                     ) : (

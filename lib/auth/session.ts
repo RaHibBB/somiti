@@ -20,6 +20,17 @@ export const getCurrentMember = cache(async (): Promise<Member | null> => {
   return member
 })
 
+/**
+ * For public pages: the logged-in member, or null for a visitor. Everyone may read the accounts
+ * without logging in (samiti decision); logging in is only needed to write something.
+ * A member who still has to change their starting password is sent there first.
+ */
+export async function getViewer(): Promise<Member | null> {
+  const member = await getCurrentMember()
+  if (member?.mustChangePin) redirect("/settings/pin")
+  return member
+}
+
 /** For pages and server actions: any logged-in member. Forces a PIN change first if required. */
 export async function requireMember(opts: { allowPinChange?: boolean } = {}): Promise<Member> {
   const member = await getCurrentMember()

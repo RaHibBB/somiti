@@ -8,6 +8,7 @@ import {
   HandCoins,
   KeyRound,
   LogOut,
+  LogIn,
   Receipt,
   ShieldAlert,
   User,
@@ -24,7 +25,7 @@ import {
 } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { logoutAction } from "@/lib/auth/actions"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { setViewAction } from "@/lib/auth/view-actions"
 import { showAdminUi } from "@/lib/auth/view"
 
@@ -42,6 +43,8 @@ const MEMBER_LINKS: Item[] = [
   { href: "/print/ledger", label: "পূর্ণ জমা খাতা (PDF)", icon: FileText },
   { href: "/settings/pin", label: "পাসওয়ার্ড ও ইমেইল", icon: KeyRound },
 ]
+
+const PERSONAL = new Set(["/me", "/report", "/settings/pin"])
 
 const ADMIN_LINKS: Item[] = [
   { href: "/admin/pay", label: "জমা নিন", icon: HandCoins },
@@ -74,12 +77,12 @@ function LinkList({ items }: { items: Item[] }) {
 }
 
 export default async function MorePage() {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   return (
     <div className="space-y-6">
       <PageTitle>আরও</PageTitle>
-      {me.role === "admin" ? (
+      {me?.role === "admin" ? (
         // Admins can look at the app exactly as a member sees it, then switch back.
         <form action={setViewAction}>
           <input type="hidden" name="mode" value={adminUi ? "member" : "admin"} />
@@ -97,21 +100,31 @@ export default async function MorePage() {
           </button>
         </form>
       ) : null}
-      <LinkList items={MEMBER_LINKS} />
+      {/* Visitors: everything readable; personal pages need login. */}
+      <LinkList items={me ? MEMBER_LINKS : MEMBER_LINKS.filter((l) => !PERSONAL.has(l.href))} />
       {adminUi ? (
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-muted-foreground">অ্যাডমিন</h2>
           <LinkList items={ADMIN_LINKS} />
         </section>
       ) : null}
-      <form action={logoutAction}>
-        <button
-          type="submit"
-          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border bg-white text-base text-destructive active:bg-muted"
+      {me ? (
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border bg-white text-base text-destructive active:bg-muted"
+          >
+            <LogOut className="size-5" /> লগআউট
+          </button>
+        </form>
+      ) : (
+        <Link
+          href="/login"
+          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-semibold text-white"
         >
-          <LogOut className="size-5" /> লগআউট
-        </button>
-      </form>
+          <LogIn className="size-5" /> লগইন (জমা জানাতে, ভোট দিতে বা অ্যাডমিনের কাজে)
+        </Link>
+      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { UserPlus } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot } from "@/lib/data"
 import { MembersList, type MemberRow } from "./members-list"
@@ -9,7 +9,7 @@ import { MembersList, type MemberRow } from "./members-list"
 export const metadata = { title: "সদস্য — সমিতি" }
 
 export default async function MembersPage() {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const snap = await getSnapshot()
   const rows: MemberRow[] = snap.members.map((m) => ({

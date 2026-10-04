@@ -2,13 +2,13 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { PageTitle } from "@/components/layout/page-title"
 import { MemberStatement } from "@/components/member-statement"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot } from "@/lib/data"
 import { toBn } from "@/lib/format"
 
 export default async function MemberAccountPage({ params }: PageProps<"/members/[id]">) {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const id = Number((await params).id)
   const snap = await getSnapshot()

@@ -1,12 +1,12 @@
 import { PrintDoc } from "@/components/print/print-doc"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 
 export const metadata = { title: "পূর্ণ জমা খাতা — সমিতি" }
 
 export default async function PrintLedgerPage() {
-  await requireMember()
+  await getViewer()
   const snap = await getSnapshot()
   const rows = snap.members
     .flatMap((m) => m.payments.map((p) => ({ p, no: m.member.memberNo, name: m.member.nameBn })))

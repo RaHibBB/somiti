@@ -2,7 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { STATUS_LABEL } from "@/components/member-statement"
 import { PrintDoc } from "@/components/print/print-doc"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { getSnapshot, loadTransactions } from "@/lib/data"
 import { formatDate, monthLabel, receiptLabel, taka, toBn, TXN_TYPE_LABELS } from "@/lib/format"
 import { addMonths } from "@/lib/ledger"
@@ -10,7 +10,7 @@ import { addMonths } from "@/lib/ledger"
 export const metadata = { title: "মাসিক রিপোর্ট — সমিতি" }
 
 export default async function PrintMonthPage({ params }: PageProps<"/print/month/[month]">) {
-  await requireMember()
+  await getViewer()
   const raw = (await params).month
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(raw)) notFound()
   const month = `${raw}-01`

@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { desc } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getDb } from "@/lib/db"
 import { profitDistributions } from "@/lib/db/schema"
@@ -16,7 +16,7 @@ import { SaveDistributionForm, VoidDistributionForm } from "./profit-forms"
 export const metadata = { title: "মুনাফা বণ্টন — সমিতি" }
 
 export default async function ProfitPage({ searchParams }: PageProps<"/profit">) {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const db = getDb()
   const today = todayDhaka()
@@ -111,7 +111,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/profit">)
         <h2 className="text-lg font-semibold text-brand-navy">সংরক্ষিত বণ্টন</h2>
         {saved.map((d) => {
           const details = d.details as DistributionDetails | null
-          const myLine = details?.lines.find((l) => l.memberId === me.id)
+          const myLine = me ? details?.lines.find((l) => l.memberId === me.id) : undefined
           const isVoid = d.status === "void"
           return (
             <article key={d.id} className={cn("space-y-2 rounded-xl border bg-white p-4", isVoid && "bg-muted opacity-75")}>

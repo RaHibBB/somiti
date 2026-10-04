@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { asc, eq } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { ProposalBadge } from "@/components/proposal-badge"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getDb } from "@/lib/db"
 import { members, proposals, transactions, votes } from "@/lib/db/schema"
@@ -19,7 +19,7 @@ const OUTCOME_TEXT = {
 } as const
 
 export default async function ProposalPage({ params }: PageProps<"/proposals/[id]">) {
-  const me = await requireMember()
+  const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const id = Number((await params).id)
   if (!Number.isInteger(id)) notFound()
@@ -29,7 +29,7 @@ export default async function ProposalPage({ params }: PageProps<"/proposals/[id
   if (!p) notFound()
 
   const [mine, counts, active, voters, linked] = await Promise.all([
-    myVote(db, id, me.id),
+    me ? myVote(db, id, me.id) : Promise.resolve(null),
     countVotes(db, id),
     activeMemberCount(db),
     db
@@ -73,6 +73,13 @@ export default async function ProposalPage({ params }: PageProps<"/proposals/[id
             <p className="rounded-lg bg-green-50 p-3 text-base text-green-800">
               ✓ আপনি &quot;{mine.choice === "yes" ? "হ্যাঁ" : "না"}&quot; ভোট দিয়েছেন ({formatDateTime(mine.createdAt)})।
             </p>
+          ) : !me ? (
+            <Link
+              href={`/login?next=/proposals/${p.id}`}
+              className="block rounded-xl bg-primary py-3 text-center text-base font-semibold text-white"
+            >
+              ভোট দিতে লগইন করুন
+            </Link>
           ) : me.status === "active" ? (
             <VoteForm proposalId={p.id} />
           ) : null}

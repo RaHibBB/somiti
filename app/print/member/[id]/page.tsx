@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation"
 import { STATUS_LABEL } from "@/components/member-statement"
 import { PrintDoc } from "@/components/print/print-doc"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 
 export const metadata = { title: "সদস্য বিবরণী — সমিতি" }
 
 export default async function PrintMemberPage({ params }: PageProps<"/print/member/[id]">) {
-  const me = await requireMember()
+  const me = await getViewer()
   const id = Number((await params).id)
   const snap = await getSnapshot()
   const entry = snap.members.find((m) => m.member.id === id)
@@ -18,7 +18,7 @@ export default async function PrintMemberPage({ params }: PageProps<"/print/memb
   const pays = [...entry.payments].sort((a, b) => a.receiptNo - b.receiptNo)
 
   return (
-    <PrintDoc title="সদস্য হিসাব বিবরণী" subtitle={`${toBn(m.memberNo)}. ${m.nameBn}${m.phone && (me.role === "admin" || me.id === m.id) ? ` · ${toBn(m.phone)}` : ""}`}>
+    <PrintDoc title="সদস্য হিসাব বিবরণী" subtitle={`${toBn(m.memberNo)}. ${m.nameBn}${m.phone && (me?.role === "admin" || me?.id === m.id) ? ` · ${toBn(m.phone)}` : ""}`}>
       <table className="mb-4">
         <tbody>
           <tr>
@@ -46,7 +46,7 @@ export default async function PrintMemberPage({ params }: PageProps<"/print/memb
               <th>নমিনি</th>
               <td colSpan={3}>
                 {m.nomineeName}
-                {m.nomineePhone && (me.role === "admin" || me.id === m.id) ? ` (${toBn(m.nomineePhone)})` : ""}
+                {m.nomineePhone && (me?.role === "admin" || me?.id === m.id) ? ` (${toBn(m.nomineePhone)})` : ""}
               </td>
             </tr>
           ) : null}

@@ -267,3 +267,11 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - Vercel env: `GOOGLE_SERVICE_ACCOUNT_JSON` (Secret, pasted by the owner) and `SHEET_ID`. The key file stays only on the admin's PC as `service-account.json` (gitignored, plus a pattern for any downloaded `*-<12 hex>.json` key).
 - First full rewrite verified against Neon: 32 members, 17 payments, ৳১৫,০০০ — identical. From now on each write updates the sheet within seconds; the daily cron retries failures and Sundays rewrite everything.
 - The cron route now returns `{ ok:false, error }` (HTTP 502) instead of a bare 500, which is how the "API not enabled" and "not shared as Editor" problems were diagnosed.
+
+## Public read access (samiti decision, 2026-10-04)
+
+- **Anyone with the link can see all accounts without logging in** (members list, every member's account, grid, transactions, votes and results, profit distributions, notices, rules, print/PDF pages). Login is needed only to act as a person: my account, reporting a bKash/Nagad payment, voting, changing password, and everything admin.
+- `proxy.ts` now requires a session only for `/admin`, `/me`, `/report`, `/settings`; it redirects to `/login?next=…` and login returns there (`safeNext` only allows same-site paths — blocks `//evil.com`, `/\evil.com`, full URLs). Public pages use `getViewer()` (member or null); all server actions still require a session/admin exactly as before.
+- Visitors get a header **লগইন** button and a bottom bar without "আমার হিসাব" (হোম · সদস্য · গ্রিড · আয়-ব্যয় · আরও). The home page shows a welcome card with login, **this month's collection progress (now shown to everyone)**, open votes, the fund and notices; personal sections only after login; admin extras (today's cash, WhatsApp group button, যাচাই card) stay admin-only.
+- **Kept private even now:** phone numbers and emails (admins only; a member sees their own on their printout) — verified 0 phone numbers on all public pages. Receipt photos were already public URLs.
+- **Not indexed by search engines:** `robots.txt` disallows all and every page carries `noindex, nofollow`, so names and amounts don't appear in Google results even though the link is open.

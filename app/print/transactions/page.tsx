@@ -1,5 +1,5 @@
 import { PrintDoc } from "@/components/print/print-doc"
-import { requireMember } from "@/lib/auth/session"
+import { getViewer } from "@/lib/auth/session"
 import { loadFund, loadTransactions } from "@/lib/data"
 import { formatDate, taka, TXN_TYPE_LABELS } from "@/lib/format"
 import type { TxnType } from "@/lib/ledger"
@@ -7,7 +7,7 @@ import type { TxnType } from "@/lib/ledger"
 export const metadata = { title: "আয়-ব্যয় ও বিনিয়োগ — সমিতি" }
 
 export default async function PrintTransactionsPage() {
-  await requireMember()
+  await getViewer()
   const [rows, fund] = await Promise.all([loadTransactions(), loadFund()])
   const ordered = [...rows].reverse() // oldest first on paper
 
