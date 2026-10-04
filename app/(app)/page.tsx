@@ -9,9 +9,9 @@ import { getDb } from "@/lib/db"
 import { proposals, votes } from "@/lib/db/schema"
 import { closeExpiredProposals } from "@/lib/services/proposals"
 import { and, eq, notExists } from "drizzle-orm"
-import { HandCoins, Plus, UserPlus, Vote } from "lucide-react"
+import { CalendarClock, HandCoins, Plus, UserPlus, Users, Vote } from "lucide-react"
 import { formatDate, monthLabel, taka, toBn } from "@/lib/format"
-import { monthOf } from "@/lib/ledger"
+import { dueReminder, monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 
 export default async function DashboardPage() {
@@ -40,6 +40,7 @@ export default async function DashboardPage() {
   ])
   const entry = snap.members.find((m) => m.member.id === me.id)!
   const thisMonth = monthOf(snap.today)
+  const reminder = dueReminder(entry.lines, snap.today, snap.settings.dueDay)
   // Admin summary: this month's collection and today's receipts (for handing over cash).
   const active = snap.members.filter((m) => m.member.status === "active")
   const monthLines = active.map((m) => m.lines.find((l) => l.month === thisMonth)).filter((l) => l !== undefined)
@@ -71,10 +72,16 @@ export default async function DashboardPage() {
             <Plus className="size-7" /> আয়/ব্যয় যোগ
           </Link>
           <Link
-            href="/admin/members/new"
-            className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted"
+            href="/admin/pay/bulk"
+            className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted"
           >
-            <UserPlus className="size-5" /> নতুন সদস্য যোগ করুন
+            <Users className="size-5" /> একসাথে জমা
+          </Link>
+          <Link
+            href="/admin/members/new"
+            className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted"
+          >
+            <UserPlus className="size-5" /> নতুন সদস্য
           </Link>
         </div>
       ) : null}
@@ -138,6 +145,15 @@ export default async function DashboardPage() {
               : "আপনার কোনো বকেয়া নেই। ধন্যবাদ!"}
           </p>
         </div>
+        {reminder ? (
+          <div className="flex items-center gap-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-amber-950">
+            <CalendarClock className="size-7 shrink-0" />
+            <p className="text-base leading-snug">
+              {monthLabel(reminder.month)}-এর চাঁদা <b>{taka(reminder.remaining)}</b> — {formatDate(reminder.dueDate)}-এর মধ্যে দিন।{" "}
+              <b>{reminder.daysLeft === 0 ? "আজই শেষ দিন!" : `আর ${toBn(reminder.daysLeft)} দিন বাকি।`}</b>
+            </p>
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-2">
           <StatCard label="আমার শেয়ার" value={`${toBn(entry.sharesNow)} টি`} />
           <StatCard label="আমার মোট জমা" value={taka(entry.paid)} tone="good" />

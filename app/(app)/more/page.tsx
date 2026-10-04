@@ -11,6 +11,7 @@ import {
   Receipt,
   ShieldAlert,
   User,
+  Users,
   UserCog,
   Ban,
   ArrowLeftRight,
@@ -42,6 +43,7 @@ const MEMBER_LINKS: Item[] = [
 
 const ADMIN_LINKS: Item[] = [
   { href: "/admin/pay", label: "জমা নিন", icon: HandCoins },
+  { href: "/admin/pay/bulk", label: "একসাথে অনেকের জমা (সভার দিন)", icon: Users },
   { href: "/admin/dues", label: "বকেয়া ও রিমাইন্ডার", icon: ShieldAlert },
   { href: "/admin/members", label: "সদস্য ব্যবস্থাপনা", icon: UserCog },
   { href: "/admin/transactions/new", label: "আয়/ব্যয়/বিনিয়োগ যোগ করুন", icon: ClipboardList },

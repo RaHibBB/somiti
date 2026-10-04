@@ -1,3 +1,5 @@
+import Link from "next/link"
+import { Users } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
@@ -24,7 +26,15 @@ export default async function TakePaymentPage({ searchParams }: PageProps<"/admi
   const preselect = typeof pre === "string" ? Number(pre) : undefined
   return (
     <>
-      <PageTitle>জমা নিন</PageTitle>
+      <PageTitle
+        action={
+          <Link href="/admin/pay/bulk" className="flex h-10 items-center gap-1 rounded-lg border bg-white px-3 text-sm">
+            <Users className="size-4" /> একসাথে অনেকের
+          </Link>
+        }
+      >
+        জমা নিন
+      </PageTitle>
       <PayForm members={list} today={snap.today} preselectId={preselect} />
     </>
   )

@@ -243,3 +243,11 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - **Admin home card "এই মাসের চাঁদা":** how many active members have fully paid this month (x/y), amount collected vs expected (progress bar), **today's receipts** (count + total, for handing over cash), and how many members owe money (taps through to বকেয়া).
 - **Install as an app:** web manifest (`/manifest.webmanifest`, name "সমিতি", navy theme) and PNG icons generated with `next/og` (a stack of green coins on navy — shapes only, no font needed): browser tab, iPhone home-screen and Android 192/512. The proxy lets these load before login, as phones require.
 - Login box hint now leads with mobile number / member number (most members have no email) and uses the normal keyboard.
+
+## Bulk payments and due reminder (2026-10-04)
+
+- **একসাথে জমা** (`/admin/pay/bulk`): pick a month (start … two months ahead), tick members (already-paid ones are greyed out, "সবাই" selects everyone still owing), choose method/date, save. Each ticked member gets their **full remaining amount for that month** as a normal payment with its own receipt (same service, audit and sheet outbox as single payments) and a WhatsApp receipt button. Amounts are recomputed on the server, never taken from the form. Partial payments stay on the normal জমা নিন screen.
+  - Retry-safe: the batch has one random id; each member's payment uses `${batch}:${memberId}` as its `client_ref`, so re-submitting the same batch returns the existing receipts instead of paying twice.
+  - Members that fail (e.g. cancelled meanwhile) are listed as skipped; the rest still save.
+  - Reached from: জমা নিন page ("একসাথে অনেকের"), admin home (2×2 buttons), আরও.
+- **Due reminder for members** (dashboard, under আমার বকেয়া): "অক্টোবর ২০২৬-এর চাঁদা ৳X — ১০/১০/২০২৬-এর মধ্যে দিন। আর N দিন বাকি।" (or "আজই শেষ দিন!"). Shown only while this month still has something unpaid and its due date hasn't passed; overdue months already show as বকেয়া. Logic in `dueReminder()` (`lib/ledger.ts`, unit-tested).

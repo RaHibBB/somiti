@@ -3,6 +3,7 @@ import {
   addMonths,
   allMonths,
   dueForMember,
+  dueReminder,
   expectedForMember,
   fundSummary,
   memberMonths,
@@ -146,5 +147,19 @@ describe("fund", () => {
   it("handles an empty fund", () => {
     const f = fundSummary(0, [])
     expect(f).toMatchObject({ cash: 0, invested: 0, cashPct: 100, cashBelowMinimum: false })
+  })
+})
+
+describe("due reminder", () => {
+  const h = shares([2, "2026-10-01"])
+  it("counts the days left until the 10th", () => {
+    const lines = memberMonths(h, [], "2026-10-04", S)
+    expect(dueReminder(lines, "2026-10-04", 10)).toEqual({ month: "2026-10-01", remaining: 1000, dueDate: "2026-10-10", daysLeft: 6 })
+    expect(dueReminder(memberMonths(h, [], "2026-10-10", S), "2026-10-10", 10)?.daysLeft).toBe(0)
+  })
+  it("shows only what is still unpaid, and nothing once paid or overdue", () => {
+    expect(dueReminder(memberMonths(h, [pay("2026-10-01", 400)], "2026-10-04", S), "2026-10-04", 10)?.remaining).toBe(600)
+    expect(dueReminder(memberMonths(h, [pay("2026-10-01", 1000)], "2026-10-04", S), "2026-10-04", 10)).toBeNull()
+    expect(dueReminder(memberMonths(h, [], "2026-10-11", S), "2026-10-11", 10)).toBeNull()
   })
 })

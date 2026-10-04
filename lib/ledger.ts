@@ -216,3 +216,20 @@ export function fundSummary(validDuesTotal: number, txns: TxnRow[], maxInvestPct
     cashBelowMinimum: total > 0 && cashPct < minCashPct,
   }
 }
+
+// ── Member reminder ──────────────────────────────────────────────────────────
+
+export type DueReminder = { month: string; remaining: number; dueDate: string; daysLeft: number }
+
+/**
+ * "This month's dues: ৳X by the 10th — N days left": only while the current month still has
+ * something to pay and its due date hasn't passed (overdue months are shown as বকেয়া instead).
+ */
+export function dueReminder(lines: MonthLine[], today: string, dueDay: number): DueReminder | null {
+  const line = lines.find((l) => l.month === monthOf(today))
+  if (!line || line.remaining <= 0) return null
+  const dueDate = dueDateOf(line.month, dueDay)
+  if (today > dueDate) return null
+  const daysLeft = Math.round((Date.parse(dueDate + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86_400_000)
+  return { month: line.month, remaining: line.remaining, dueDate, daysLeft }
+}
