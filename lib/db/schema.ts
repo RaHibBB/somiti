@@ -93,7 +93,8 @@ export const shareHistory = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    check("share_history_shares_range", sql`${t.shares} BETWEEN 1 AND 5`),
+    // No upper limit (samiti decision 2026-10-04, replacing the constitution's 1–5).
+    check("share_history_shares_positive", sql`${t.shares} >= 1`),
     check("share_history_first_of_month", sql`EXTRACT(DAY FROM ${t.effectiveMonth}) = 1`),
     index("share_history_member_idx").on(t.memberId, t.effectiveMonth),
   ],

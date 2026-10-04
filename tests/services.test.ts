@@ -56,8 +56,8 @@ describe("members", () => {
     ).rejects.toThrow("মোবাইল নম্বর")
   })
 
-  it("rejects more than 5 shares", async () => {
-    await expect(changeShares(db, adminId, memberId, 10, "2027-01-01")).rejects.toBeInstanceOf(UserError)
+  it("rejects zero shares (there is no upper limit)", async () => {
+    await expect(changeShares(db, adminId, memberId, 0, "2027-06-01")).rejects.toBeInstanceOf(UserError)
   })
 
   it("does not allow demoting the last admin", async () => {

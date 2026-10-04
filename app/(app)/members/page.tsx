@@ -1,3 +1,5 @@
+import Link from "next/link"
+import { UserPlus } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireMember } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
@@ -20,7 +22,17 @@ export default async function MembersPage() {
   const active = rows.filter((r) => !r.cancelled)
   return (
     <>
-      <PageTitle>সব সদস্য</PageTitle>
+      <PageTitle
+        action={
+          me.role === "admin" ? (
+            <Link href="/admin/members/new" className="flex h-11 items-center gap-1 rounded-lg bg-primary px-3 text-base text-white">
+              <UserPlus className="size-5" /> নতুন সদস্য
+            </Link>
+          ) : null
+        }
+      >
+        সব সদস্য
+      </PageTitle>
       <MembersList rows={rows} activeCount={active.length} isAdmin={me.role === "admin"} />
     </>
   )

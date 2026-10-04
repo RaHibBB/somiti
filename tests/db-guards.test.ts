@@ -78,8 +78,9 @@ describe("database guards", () => {
     await rejects("UPDATE share_history SET shares = 3", /insert-only/)
   })
 
-  it("enforces 1–5 shares and phone format", async () => {
-    await rejects("INSERT INTO share_history (member_id, shares, effective_month) VALUES (2, 10, '2026-11-01')", /shares_range/)
+  it("enforces at least 1 share (no upper limit) and phone format", async () => {
+    await rejects("INSERT INTO share_history (member_id, shares, effective_month) VALUES (2, 0, '2026-11-01')", /shares_positive/)
+    await pg.exec("INSERT INTO share_history (member_id, shares, effective_month) VALUES (2, 10, '2026-11-01')")
     await rejects("INSERT INTO members (member_no, name_bn, phone, joined_on) VALUES (9, 'x', '1234', '2026-10-01')", /phone_format/)
   })
 

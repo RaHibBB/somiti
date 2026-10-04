@@ -9,6 +9,9 @@ import { monthOf } from "@/lib/ledger"
 import { todayDhaka } from "@/lib/format"
 import { isUniqueViolation, UserError } from "./errors"
 
+/** No real limit on shares; this only catches typos (e.g. 5000 instead of 5). */
+export const MAX_SHARES = 999
+
 export type MemberInput = {
   memberNo: number
   nameBn: string
@@ -54,8 +57,8 @@ export async function createMember(
   actorId: number,
   input: MemberInput & { shares: number; shareStartMonth: string; pin?: string },
 ): Promise<{ member: Member; pin: string }> {
-  if (!Number.isInteger(input.shares) || input.shares < 1 || input.shares > 5) {
-    throw new UserError("শেয়ার ১ থেকে ৫ এর মধ্যে হতে হবে।")
+  if (!Number.isInteger(input.shares) || input.shares < 1 || input.shares > MAX_SHARES) {
+    throw new UserError("শেয়ার সংখ্যা সঠিক নয় (কমপক্ষে ১)।")
   }
   const pin = input.pin ?? generatePin()
   const pinHash = await bcrypt.hash(pin, 10)
@@ -135,7 +138,7 @@ export async function changeShares(
   effectiveMonth: string,
   today = todayDhaka(),
 ) {
-  if (!Number.isInteger(shares) || shares < 1 || shares > 5) throw new UserError("শেয়ার ১ থেকে ৫ এর মধ্যে হতে হবে।")
+  if (!Number.isInteger(shares) || shares < 1 || shares > MAX_SHARES) throw new UserError("শেয়ার সংখ্যা সঠিক নয় (কমপক্ষে ১)।")
   if (!/^\d{4}-\d{2}-01$/.test(effectiveMonth)) throw new UserError("মাস সঠিক নয়।")
   return db.transaction(async (tx) => {
     const [m] = await tx.select({ id: members.id }).from(members).where(eq(members.id, memberId))

@@ -10,7 +10,7 @@
 //
 // Initial PINs are printed ONCE at the end of a commit. Hand them out, then clear the terminal.
 import "dotenv/config"
-import { readFile } from "node:fs/promises"
+import { readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import bcrypt from "bcryptjs"
 import { count } from "drizzle-orm"
@@ -177,10 +177,22 @@ async function commit(ms: ImportMember[], ps: ImportPayment[], ts: ImportTransac
     })
   })
 
+  // Starting passwords go to a private, gitignored file (not the terminal), to be handed out once.
+  const file = "import-passwords.txt"
+  const lines = [
+    "পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি — প্রথম লগইনের অস্থায়ী পাসওয়ার্ড",
+    "প্রত্যেককে শুধু তার নিজের পাসওয়ার্ড দিন। সবাই দেওয়া হয়ে গেলে এই ফাইল মুছে ফেলুন।",
+    "লগইন: মোবাইল নম্বর অথবা সদস্য নম্বর + এই পাসওয়ার্ড। প্রথম লগইনে নিজের পাসওয়ার্ড দিতে হবে।",
+    "",
+    "নং\tপাসওয়ার্ড\tনাম\tমোবাইল",
+    ...ms.map((m) => `${m.memberNo}\t${pins.get(m.memberNo)}\t${m.nameBn}\t${m.phone ?? "নেই — সদস্য নং দিয়ে লগইন"}`),
+  ]
+  await writeFile(file, "﻿" + lines.join("\r\n") + "\r\n", { flag: "wx" }).catch(async () => {
+    // Never overwrite an earlier file silently.
+    await writeFile(`import-passwords-${Date.now()}.txt`, "﻿" + lines.join("\r\n") + "\r\n")
+  })
   console.log("\n✓ ইমপোর্ট সম্পন্ন।")
-  console.log("\nপ্রাথমিক পিন (শুধু একবার দেখানো হচ্ছে — সদস্যদের দিয়ে দিন, তারপর টার্মিনাল মুছে ফেলুন):")
-  console.log("  নং   পিন     নাম")
-  for (const m of ms) console.log(`  ${String(m.memberNo).padStart(3)}  ${pins.get(m.memberNo)}  ${m.nameBn}${m.phone ? "" : "  (মোবাইল নেই — সদস্য নং দিয়ে লগইন)"}`)
+  console.log(`\n${ms.length} জনের অস্থায়ী পাসওয়ার্ড লেখা হয়েছে: ${file} (git-এ যাবে না)। সদস্যদের দিয়ে ফাইলটি মুছে ফেলুন।`)
   console.log("\nএরপর: ওয়েবসাইটের /admin/export থেকে \"Google Sheet এখনই পুরো আপডেট করুন\" চাপুন।")
 }
 

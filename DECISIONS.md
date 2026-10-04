@@ -215,3 +215,15 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - **সদস্য** list: admins get a green **জমা** button on every active member's row → opens take-payment with that member pre-selected (oldest unpaid month and amount already filled).
 - A member's account page: **জমা নিন** button for admins.
 - These sit alongside the existing **জমা নিন** tab in the admin bottom bar and the button on `/admin/dues`.
+
+## No upper limit on shares (samiti decision, 2026-10-04)
+
+- The samiti decided a member may hold **any number of shares** (at least 1), replacing the constitution's 1–5 in `SAMITI_SPEC.md`. DB constraint is now `shares >= 1` (migration `0009`); forms use a number box showing the monthly amount; a soft cap of 999 only catches typos. The import no longer flags members with more than 5 shares (member ২২ was imported with 10). `content/rules.md` updated.
+- **"Add member" made visible:** a **নতুন সদস্য** button on the সদস্য page and on the admin home screen (it previously lived only under আরও → সদস্য ব্যবস্থাপনা).
+
+## Production database set up and members imported (2026-10-04)
+
+- Neon project `somiti` (AWS Singapore, Postgres 17); all migrations applied.
+- Imported from the old sheet: 32 members (6 admins), 32 share rows, 17 payments (৳১৫,০০০, R-0001…R-0017).
+- Members ২৩ and ২৪ share ২২'s phone, and ২৬ shares ২৫'s; each phone can belong to one login only, so those three were imported **without a phone** (they log in with their member number; an admin can add their own phone later).
+- Starting passwords were written to `import-passwords.txt` on the admin's PC (gitignored) instead of the terminal, so they never appeared in logs.

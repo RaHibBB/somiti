@@ -1,12 +1,12 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FormError, SubmitButton } from "@/components/forms/form-bits"
 import { NativeSelect } from "@/components/forms/native-select"
-import { toBn } from "@/lib/format"
+import { fromBn, taka, toBn } from "@/lib/format"
 import { cancelMemberAction, changeSharesAction, createMemberAction, resetPinAction, updateMemberAction } from "./actions"
 
 export type MemberDefaults = {
@@ -94,15 +94,7 @@ export function NewMemberForm({ defaults, startMonth }: { defaults: MemberDefaul
     <form action={action} className="space-y-4">
       <DetailFields d={defaults} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="শেয়ার (১–৫)" htmlFor="shares">
-          <NativeSelect id="shares" name="shares" defaultValue="1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {toBn(n)} শেয়ার (৳{toBn(n * 500)})
-              </option>
-            ))}
-          </NativeSelect>
-        </Field>
+        <SharesInput defaultValue={1} label="শেয়ার সংখ্যা" />
         <Field label="শেয়ার কোন মাস থেকে" htmlFor="shareStartMonth">
           <Input id="shareStartMonth" name="shareStartMonth" type="month" defaultValue={startMonth.slice(0, 7)} required />
         </Field>
@@ -116,6 +108,17 @@ export function NewMemberForm({ defaults, startMonth }: { defaults: MemberDefaul
       <FormError message={state && !state.ok ? state.error : undefined} />
       <SubmitButton>সদস্য যোগ করুন</SubmitButton>
     </form>
+  )
+}
+
+/** Any number of shares (no upper limit); shows the monthly amount as you type. */
+function SharesInput({ defaultValue, label }: { defaultValue: number; label: string }) {
+  const [value, setValue] = useState(String(defaultValue))
+  const n = Number(fromBn(value))
+  return (
+    <Field label={label} htmlFor="shares" hint={Number.isInteger(n) && n > 0 ? `মাসে ${taka(n * 500)}` : "কমপক্ষে ১"}>
+      <Input id="shares" name="shares" inputMode="numeric" required value={value} onChange={(e) => setValue(e.target.value)} />
+    </Field>
   )
 }
 
@@ -142,15 +145,7 @@ export function SharesForm({ id, current, defaultMonth }: { id: number; current:
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={id} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="নতুন শেয়ার" htmlFor="shares">
-          <NativeSelect id="shares" name="shares" defaultValue={String(current)}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {toBn(n)} শেয়ার
-              </option>
-            ))}
-          </NativeSelect>
-        </Field>
+        <SharesInput defaultValue={current || 1} label="নতুন শেয়ার সংখ্যা" />
         <Field label="কোন মাস থেকে" htmlFor="effectiveMonth">
           <Input id="effectiveMonth" name="effectiveMonth" type="month" defaultValue={defaultMonth.slice(0, 7)} required />
         </Field>

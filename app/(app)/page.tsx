@@ -8,7 +8,7 @@ import { getDb } from "@/lib/db"
 import { proposals, votes } from "@/lib/db/schema"
 import { closeExpiredProposals } from "@/lib/services/proposals"
 import { and, eq, notExists } from "drizzle-orm"
-import { HandCoins, Plus, Vote } from "lucide-react"
+import { HandCoins, Plus, UserPlus, Vote } from "lucide-react"
 import { formatDate, monthLabel, taka, toBn } from "@/lib/format"
 import { monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
@@ -58,6 +58,12 @@ export default async function DashboardPage() {
             className="flex h-20 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-brand-navy bg-white text-base font-semibold text-brand-navy active:bg-muted"
           >
             <Plus className="size-7" /> আয়/ব্যয় যোগ
+          </Link>
+          <Link
+            href="/admin/members/new"
+            className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted"
+          >
+            <UserPlus className="size-5" /> নতুন সদস্য যোগ করুন
           </Link>
         </div>
       ) : null}

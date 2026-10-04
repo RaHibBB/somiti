@@ -64,6 +64,13 @@
       "when": 1791118866179,
       "tag": "0008_vote_close_race",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791120356359,
+      "tag": "0009_shares_no_upper_limit",
+      "breakpoints": true
     }
   ]
 }

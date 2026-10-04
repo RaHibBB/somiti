@@ -53,8 +53,8 @@ describe("members tab", () => {
     expect(ms.map((m) => m.memberNo)).toEqual([1, 2, 3])
     expect(ms[0].role).toBe("admin")
     expect(ms[1]).toMatchObject({ role: "member", phone: null, shares: 2 })
-    expect(ms[2].shares).toBeNull() // >5 shares: not auto-fixed
-    expect(flags.some((f) => f.severity === "block" && f.message.includes("10 শেয়ার"))).toBe(true)
+    expect(ms[2].shares).toBe(10) // no upper limit on shares
+    expect(flags.some((f) => f.severity === "block")).toBe(false)
     expect(flags.some((f) => f.severity === "warn" && f.message.includes("মোবাইল নম্বর নেই"))).toBe(true)
     expect(flags.some((f) => f.severity === "info" && f.message.includes("মোট"))).toBe(true) // totals row skipped
     // The other 5 admin phones aren't in this synthetic list

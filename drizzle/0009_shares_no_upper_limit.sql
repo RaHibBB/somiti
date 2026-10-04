@@ -1,0 +1,2 @@
+ALTER TABLE "share_history" DROP CONSTRAINT "share_history_shares_range";--> statement-breakpoint
+ALTER TABLE "share_history" ADD CONSTRAINT "share_history_shares_positive" CHECK ("share_history"."shares" >= 1);

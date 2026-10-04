@@ -12,7 +12,7 @@ export type ImportMember = {
   memberNo: number
   nameBn: string
   phone: string | null
-  shares: number | null // null = flagged (>5 or invalid); no share_history row is created
+  shares: number | null // null = flagged (invalid); no share_history row is created
   rawShares: string
   joinedOn: string | null
   nomineeName: string | null
@@ -201,13 +201,6 @@ export function parseMembers(rows: string[][], flags: Flag[]): ImportMember[] {
     let shares: number | null = n
     if (n === null || n < 1) {
       flags.push({ severity: "block", where, message: `সদস্য ${no} (${name}): শেয়ার সংখ্যা সঠিক নয় "${rawShares}"` })
-      shares = null
-    } else if (n > 5) {
-      flags.push({
-        severity: "block",
-        where,
-        message: `সদস্য ${no} (${name}): ${n} শেয়ার (মাসে ৳${n * 500}) — নিয়মে সর্বোচ্চ ৫। অ্যাডমিনরা সিদ্ধান্ত নিন (যেমন দুই সদস্যপদে ভাগ)।`,
-      })
       shares = null
     }
 

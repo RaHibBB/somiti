@@ -21,7 +21,7 @@ const memberFields = z.object({
 })
 
 const createSchema = memberFields.extend({
-  shares: intIn(1, 5, "শেয়ার ১ থেকে ৫ এর মধ্যে হতে হবে।"),
+  shares: intIn(1, 999, "শেয়ার সংখ্যা সঠিক নয় (কমপক্ষে ১)।"),
   shareStartMonth: monthKey,
   pin: z
     .string()
@@ -59,7 +59,7 @@ export async function changeSharesAction(_: State<null>, fd: FormData) {
   return adminAction(async (admin) => {
     const obj = formObject(fd)
     const { id, shares, effectiveMonth } = z
-      .object({ id: idParam, shares: intIn(1, 5, "শেয়ার ১ থেকে ৫ এর মধ্যে হতে হবে।"), effectiveMonth: monthKey })
+      .object({ id: idParam, shares: intIn(1, 999, "শেয়ার সংখ্যা সঠিক নয় (কমপক্ষে ১)।"), effectiveMonth: monthKey })
       .parse(obj)
     await changeShares(getDb(), admin.id, id, shares, effectiveMonth)
     refresh()
