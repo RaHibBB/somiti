@@ -18,12 +18,11 @@ export function LoginForm() {
           id="identifier"
           name="identifier"
           type="text"
-          inputMode="email"
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
           required
-          placeholder="you@gmail.com বা ০১XXXXXXXXX"
+          placeholder="মোবাইল (০১XXXXXXXXX) বা সদস্য নং"
         />
       </Field>
       <Field label="পাসওয়ার্ড" htmlFor="password">

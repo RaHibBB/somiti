@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { ProposalBadge } from "@/components/proposal-badge"
 import { requireMember } from "@/lib/auth/session"
+import { showAdminUi } from "@/lib/auth/view"
 import { getDb } from "@/lib/db"
 import { votes } from "@/lib/db/schema"
 import { formatDateTime, taka } from "@/lib/format"
@@ -13,6 +14,7 @@ export const metadata = { title: "প্রস্তাব ও ভোট — স
 
 export default async function ProposalsPage() {
   const me = await requireMember()
+  const adminUi = await showAdminUi(me)
   const db = getDb()
   await closeExpiredProposals(db)
   const list = await listProposals(db)
@@ -28,7 +30,7 @@ export default async function ProposalsPage() {
     <div className="space-y-4">
       <PageTitle
         action={
-          me.role === "admin" ? (
+          adminUi ? (
             <Link href="/admin/proposals/new" className="flex h-11 items-center gap-1 rounded-lg bg-primary px-3 text-base text-white">
               <Plus className="size-5" /> নতুন
             </Link>

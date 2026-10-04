@@ -2,6 +2,7 @@ import Link from "next/link"
 import { desc } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireMember } from "@/lib/auth/session"
+import { showAdminUi } from "@/lib/auth/view"
 import { getDb } from "@/lib/db"
 import { profitDistributions } from "@/lib/db/schema"
 import { loadSettings } from "@/lib/data"
@@ -16,6 +17,7 @@ export const metadata = { title: "মুনাফা বণ্টন — সম�
 
 export default async function ProfitPage({ searchParams }: PageProps<"/profit">) {
   const me = await requireMember()
+  const adminUi = await showAdminUi(me)
   const db = getDb()
   const today = todayDhaka()
   const settings = await loadSettings(db)
@@ -23,7 +25,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/profit">)
   const requested = Number((await searchParams).year)
   const year = Number.isInteger(requested) && requested >= 0 && requested < yearsSoFar ? requested : yearsSoFar - 1
   const saved = await db.select().from(profitDistributions).orderBy(desc(profitDistributions.periodStart), desc(profitDistributions.id))
-  const preview = me.role === "admin" ? await previewDistribution(db, year) : null
+  const preview = adminUi ? await previewDistribution(db, year) : null
   const yearEnd = samitiYear(settings.startMonth, year).periodEnd
   const yearFinished = monthOf(today) > yearEnd
 
@@ -118,7 +120,7 @@ export default async function ProfitPage({ searchParams }: PageProps<"/profit">)
                   <p className={cn("text-base font-semibold", isVoid && "line-through")}>{d.periodLabel}</p>
                   <p className="text-xs text-muted-foreground">সংরক্ষণ: {formatDate(d.createdAt)}</p>
                 </div>
-                {me.role === "admin" && !isVoid ? <VoidDistributionForm id={d.id} /> : null}
+                {adminUi && !isVoid ? <VoidDistributionForm id={d.id} /> : null}
               </div>
               {isVoid ? <p className="text-sm text-destructive">বাতিল — {d.voidReason}</p> : null}
               <p className="text-base">

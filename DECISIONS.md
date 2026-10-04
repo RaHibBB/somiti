@@ -235,3 +235,11 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - `DATABASE_URL` secret uses Neon's **direct** (non-pooled) host, as pg_dump needs.
 - First run (manual) succeeded: `backups/2026-10-04.sql.gz` + 12 CSVs. **Restore verified**: the dump was downloaded and restored into a throwaway database → 32 members, 6 admins, 17 payments / ৳১৫,০০০, receipt sequence continues at 18, no-delete triggers present.
 - `actions/checkout` bumped to v5 (v4 targets the deprecated Node 20 runtime).
+
+## Admin ⇄ member view, and ease-of-use pass (2026-10-04)
+
+- **Email (Gmail) skipped** by the samiti. The forgot-password page now says honestly "ask an admin for a temporary password" when no SMTP is configured in production (before, it claimed a link was sent). Admins reset from the member's page.
+- **Admin ⇄ member view toggle:** a chip in the header (অ্যাডমিন ⇄ / সদস্য ⇄) and a row at the top of আরও. Member view shows exactly what members see — member bottom bar (আমার হিসাব), no admin buttons, opens on the admin's own account — with an amber bar to switch back. It is a **display preference only** (an httpOnly cookie, `samiti_view`); permissions are untouched: admin pages/actions still check the real role in the DB.
+- **Admin home card "এই মাসের চাঁদা":** how many active members have fully paid this month (x/y), amount collected vs expected (progress bar), **today's receipts** (count + total, for handing over cash), and how many members owe money (taps through to বকেয়া).
+- **Install as an app:** web manifest (`/manifest.webmanifest`, name "সমিতি", navy theme) and PNG icons generated with `next/og` (a stack of green coins on navy — shapes only, no font needed): browser tab, iPhone home-screen and Android 192/512. The proxy lets these load before login, as phones require.
+- Login box hint now leads with mobile number / member number (most members have no email) and uses the normal keyboard.

@@ -3,6 +3,7 @@ import { AlertTriangle, ChevronRight } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
 import { requireMember } from "@/lib/auth/session"
+import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot, loadFund, loadLatestNotices } from "@/lib/data"
 import { getDb } from "@/lib/db"
 import { proposals, votes } from "@/lib/db/schema"
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils"
 
 export default async function DashboardPage() {
   const me = await requireMember()
+  const adminUi = await showAdminUi(me)
   const db = getDb()
   await closeExpiredProposals(db)
   const [snap, fund, notices, pendingVotes] = await Promise.all([
@@ -38,6 +40,15 @@ export default async function DashboardPage() {
   ])
   const entry = snap.members.find((m) => m.member.id === me.id)!
   const thisMonth = monthOf(snap.today)
+  // Admin summary: this month's collection and today's receipts (for handing over cash).
+  const active = snap.members.filter((m) => m.member.status === "active")
+  const monthLines = active.map((m) => m.lines.find((l) => l.month === thisMonth)).filter((l) => l !== undefined)
+  const monthExpected = monthLines.reduce((s, l) => s + l.expected, 0)
+  const monthPaid = monthLines.reduce((s, l) => s + Math.min(l.paid, l.expected), 0)
+  const paidCount = monthLines.filter((l) => l.status === "paid").length
+  const owingCount = active.filter((m) => m.due > 0).length
+  const todays = snap.members.flatMap((m) => m.payments).filter((p) => p.status === "valid" && p.paidOn === snap.today)
+  const todayTotal = todays.reduce((s, p) => s + p.amount, 0)
   const current = entry.lines.find((l) => l.month === thisMonth)
   const investedPct = fund.total > 0 ? 100 - fund.cashPct : 0
 
@@ -45,7 +56,7 @@ export default async function DashboardPage() {
     <div className="space-y-5">
       <PageTitle>আসসালামু আলাইকুম</PageTitle>
 
-      {me.role === "admin" ? (
+      {adminUi ? (
         <div className="grid grid-cols-2 gap-2">
           <Link
             href="/admin/pay"
@@ -66,6 +77,35 @@ export default async function DashboardPage() {
             <UserPlus className="size-5" /> নতুন সদস্য যোগ করুন
           </Link>
         </div>
+      ) : null}
+
+      {adminUi ? (
+        <section className="space-y-3 rounded-2xl border bg-white p-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-brand-navy">{monthLabel(thisMonth)}-এর চাঁদা</h2>
+            <span className="text-sm text-muted-foreground">
+              {toBn(paidCount)}/{toBn(active.length)} জন দিয়েছেন
+            </span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-muted">
+            <div className="h-full bg-brand-green" style={{ width: `${monthExpected ? Math.min(100, (monthPaid * 100) / monthExpected) : 0}%` }} />
+          </div>
+          <p className="text-base">
+            আদায় <b>{taka(monthPaid)}</b> / {taka(monthExpected)}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-secondary p-3">
+              <p className="text-sm text-muted-foreground">আজ জমা ({toBn(todays.length)}টি)</p>
+              <p className="text-xl font-bold">{taka(todayTotal)}</p>
+            </div>
+            <Link href="/admin/dues" className="rounded-xl bg-red-50 p-3 active:bg-red-100">
+              <p className="text-sm text-red-800">বকেয়া আছে</p>
+              <p className="flex items-center justify-between text-xl font-bold text-red-800">
+                {toBn(owingCount)} জন <ChevronRight className="size-5" />
+              </p>
+            </Link>
+          </div>
+        </section>
       ) : null}
 
       {pendingVotes.map((p) => (

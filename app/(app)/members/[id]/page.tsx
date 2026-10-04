@@ -3,11 +3,13 @@ import { notFound } from "next/navigation"
 import { PageTitle } from "@/components/layout/page-title"
 import { MemberStatement } from "@/components/member-statement"
 import { requireMember } from "@/lib/auth/session"
+import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot } from "@/lib/data"
 import { toBn } from "@/lib/format"
 
 export default async function MemberAccountPage({ params }: PageProps<"/members/[id]">) {
   const me = await requireMember()
+  const adminUi = await showAdminUi(me)
   const id = Number((await params).id)
   const snap = await getSnapshot()
   const entry = snap.members.find((m) => m.member.id === id)
@@ -17,7 +19,7 @@ export default async function MemberAccountPage({ params }: PageProps<"/members/
     <>
       <PageTitle
         action={
-          me.role === "admin" ? (
+          adminUi ? (
             <div className="flex gap-2">
               {m.status === "active" ? (
                 <Link href={`/admin/pay?member=${m.id}`} className="flex h-10 items-center rounded-lg bg-brand-green px-3 text-sm font-semibold text-white">

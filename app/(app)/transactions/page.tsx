@@ -2,6 +2,7 @@ import Link from "next/link"
 import { FileDown, ImageIcon, Plus } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireMember } from "@/lib/auth/session"
+import { showAdminUi } from "@/lib/auth/view"
 import { loadFund, loadTransactions } from "@/lib/data"
 import { formatDate, taka, TXN_TYPE_LABELS } from "@/lib/format"
 import type { TxnType } from "@/lib/ledger"
@@ -13,12 +14,13 @@ const INFLOW: TxnType[] = ["business_income", "investment_return", "bank_profit"
 
 export default async function TransactionsPage() {
   const me = await requireMember()
+  const adminUi = await showAdminUi(me)
   const [rows, fund] = await Promise.all([loadTransactions(), loadFund()])
   return (
     <div className="space-y-4">
       <PageTitle
         action={
-          me.role === "admin" ? (
+          adminUi ? (
             <Link href="/admin/transactions/new" className="flex h-11 items-center gap-1 rounded-lg bg-primary px-3 text-base text-white">
               <Plus className="size-5" /> যোগ
             </Link>

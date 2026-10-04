@@ -23,6 +23,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip Next internals, static files and API routes (cron routes use CRON_SECRET).
-  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico|.*\.(?:png|jpg|jpeg|svg|webp|ico|txt)$).*)"],
+  // Skip Next internals, static files, app icons/manifest (needed before login, for "Add to home screen")
+  // and API routes (cron routes use CRON_SECRET).
+  matcher: [
+    "/((?!api/|_next/static|_next/image|favicon.ico|icon|apple-icon|app-icon/|manifest.webmanifest|.*\.(?:png|jpg|jpeg|svg|webp|ico|txt)$).*)",
+  ],
 }

@@ -13,6 +13,7 @@ import {
   User,
   UserCog,
   Ban,
+  ArrowLeftRight,
   FileText,
   Vote,
   Megaphone,
@@ -22,6 +23,8 @@ import {
 import { PageTitle } from "@/components/layout/page-title"
 import { logoutAction } from "@/lib/auth/actions"
 import { requireMember } from "@/lib/auth/session"
+import { setViewAction } from "@/lib/auth/view-actions"
+import { showAdminUi } from "@/lib/auth/view"
 
 type Item = { href: string; label: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -67,11 +70,30 @@ function LinkList({ items }: { items: Item[] }) {
 
 export default async function MorePage() {
   const me = await requireMember()
+  const adminUi = await showAdminUi(me)
   return (
     <div className="space-y-6">
       <PageTitle>আরও</PageTitle>
-      <LinkList items={MEMBER_LINKS} />
       {me.role === "admin" ? (
+        // Admins can look at the app exactly as a member sees it, then switch back.
+        <form action={setViewAction}>
+          <input type="hidden" name="mode" value={adminUi ? "member" : "admin"} />
+          <button
+            type="submit"
+            className="flex min-h-14 w-full items-center gap-3 rounded-xl border-2 border-brand-navy bg-white px-4 text-left text-base active:bg-muted"
+          >
+            <ArrowLeftRight className="size-5 text-brand-navy" />
+            <span className="flex-1">
+              {adminUi ? "সদস্য ভিউতে দেখুন" : "অ্যাডমিন ভিউতে ফিরুন"}
+              <span className="block text-sm text-muted-foreground">
+                {adminUi ? "সদস্যরা যেমন দেখেন — নিজের হিসাবসহ" : "জমা নেওয়া ও অন্যান্য অ্যাডমিন কাজ"}
+              </span>
+            </span>
+          </button>
+        </form>
+      ) : null}
+      <LinkList items={MEMBER_LINKS} />
+      {adminUi ? (
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-muted-foreground">অ্যাডমিন</h2>
           <LinkList items={ADMIN_LINKS} />

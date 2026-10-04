@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { ProposalBadge } from "@/components/proposal-badge"
 import { requireMember } from "@/lib/auth/session"
+import { showAdminUi } from "@/lib/auth/view"
 import { getDb } from "@/lib/db"
 import { members, proposals, transactions, votes } from "@/lib/db/schema"
 import { formatDate, formatDateTime, taka, toBn } from "@/lib/format"
@@ -19,6 +20,7 @@ const OUTCOME_TEXT = {
 
 export default async function ProposalPage({ params }: PageProps<"/proposals/[id]">) {
   const me = await requireMember()
+  const adminUi = await showAdminUi(me)
   const id = Number((await params).id)
   if (!Number.isInteger(id)) notFound()
   const db = getDb()
@@ -74,7 +76,7 @@ export default async function ProposalPage({ params }: PageProps<"/proposals/[id
           ) : me.status === "active" ? (
             <VoteForm proposalId={p.id} />
           ) : null}
-          {me.role === "admin" ? <CloseProposalForm proposalId={p.id} /> : null}
+          {adminUi ? <CloseProposalForm proposalId={p.id} /> : null}
         </section>
       ) : final ? (
         <section className="space-y-3 rounded-xl border bg-white p-4">
