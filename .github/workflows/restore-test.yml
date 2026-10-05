@@ -1,0 +1,63 @@
+# Monthly restore drill: proves the newest backup in `samiti-backups` can actually be restored.
+# Restores into a throw-away Postgres container (nothing touches the live database) and checks
+# that the data and the safety triggers came back. A red run = look at the backups.
+#
+# Uses the same secret as backup.yml: BACKUP_DEPLOY_KEY (read access is enough).
+
+name: Monthly restore test
+
+on:
+  schedule:
+    # 1st of each month, 03:00 Asia/Dhaka = 21:00 UTC the day before
+    - cron: "0 21 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: restore
+          POSTGRES_DB: restore
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGURL: postgres://postgres:restore@localhost:5432/restore
+    steps:
+      - name: Check out backup repo
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ vars.BACKUP_REPO || format('{0}/samiti-backups', github.repository_owner) }}
+          ssh-key: ${{ secrets.BACKUP_DEPLOY_KEY }}
+
+      - name: Restore the newest backup
+        run: |
+          set -euo pipefail
+          FILE=$(ls backups/*.sql.gz | sort | tail -n 1)
+          echo "Restoring $FILE"
+          gzip -t "$FILE"
+          # Backups are made by pg_dump from Neon, which may reference roles/extensions we don't have.
+          gunzip -c "$FILE" | psql "$PGURL" -v ON_ERROR_STOP=1 -q >/dev/null
+
+      - name: Check the restored data
+        run: |
+          set -euo pipefail
+          q() { psql "$PGURL" -At -c "$1"; }
+          members=$(q "select count(*) from members")
+          payments=$(q "select count(*) from payments")
+          triggers=$(q "select count(*) from pg_trigger where not tgisinternal")
+          audit=$(q "select count(*) from audit_log")
+          echo "members=$members payments=$payments triggers=$triggers audit=$audit"
+          [ "$members" -gt 0 ] && [ "$audit" -gt 0 ] && [ "$triggers" -gt 5 ]
+          # The newest backup should be recent (weekly job; allow 2 weeks).
+          newest=$(ls backups/*.sql.gz | sort | tail -n 1 | sed 's#.*/##; s#\.sql\.gz##')
+          age=$(( ( $(date +%s) - $(date -d "$newest" +%s) ) / 86400 ))
+          echo "newest backup is $age days old"
+          [ "$age" -le 14 ]

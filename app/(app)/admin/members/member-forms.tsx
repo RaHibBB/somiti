@@ -34,7 +34,7 @@ function DetailFields({ d }: { d: MemberDefaults }) {
           <Input id="nameBn" name="nameBn" defaultValue={d.nameBn} required />
         </Field>
       </div>
-      <Field label="মোবাইল নম্বর" htmlFor="phone" hint="লগইন ও WhatsApp-এর জন্য। না থাকলে খালি রাখুন।">
+      <Field label="মোবাইল নম্বর" htmlFor="phone" hint="লগইন ও WhatsApp-এর জন্য। বিদেশি নম্বর হলে দেশের কোডসহ লিখুন, যেমন +971582488557। না থাকলে খালি রাখুন।">
         <Input id="phone" name="phone" inputMode="tel" defaultValue={d.phone ?? ""} placeholder="01XXXXXXXXX" />
       </Field>
       <Field label="ইমেইল (ঐচ্ছিক)" htmlFor="email" hint="ইমেইল দিয়ে লগইন ও পাসওয়ার্ড ভুলে গেলে রিসেট করার জন্য।">

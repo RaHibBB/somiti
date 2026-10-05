@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
 import { monthLabel, taka, toBn } from "@/lib/format"
 import { monthOf, overdueMonths } from "@/lib/ledger"
+import { WhatsappQueue } from "@/components/whatsapp-queue"
 import { reminderMessage, upcomingReminderMessage, waLink } from "@/lib/whatsapp"
 
 export default async function DuesPage() {
@@ -31,6 +32,23 @@ export default async function DuesPage() {
         {rows.length === 0 ? (
           <p className="rounded-xl bg-green-50 p-4 text-center text-base text-green-900">কারো মেয়াদ-পেরোনো বকেয়া নেই। 🎉</p>
         ) : null}
+        <WhatsappQueue
+          verb="রিমাইন্ডার পাঠানো"
+          items={rows.map((r) => ({
+            id: r.member.id,
+            label: `${toBn(r.member.memberNo)}. ${r.member.nameBn}`,
+            hasPhone: !!r.member.phone,
+            link: waLink(
+              r.member.phone,
+              reminderMessage({
+                name: r.member.nameBn,
+                due: r.due,
+                months: overdueMonths(r.lines).map((l) => l.month),
+                dueDay: snap.settings.dueDay,
+              }),
+            ),
+          }))}
+        />
         <ul className="space-y-2">
           {rows.map((r) => {
             const months = overdueMonths(r.lines).map((l) => l.month)
@@ -83,6 +101,18 @@ export default async function DuesPage() {
         {upcoming.length === 0 ? (
           <p className="rounded-xl bg-green-50 p-4 text-center text-base text-green-900">এই মাসের চাঁদা সবাই দিয়ে দিয়েছেন। 🎉</p>
         ) : null}
+        <WhatsappQueue
+          verb="মনে করানো"
+          items={upcoming.map((r) => ({
+            id: r.member.id,
+            label: `${toBn(r.member.memberNo)}. ${r.member.nameBn}`,
+            hasPhone: !!r.member.phone,
+            link: waLink(
+              r.member.phone,
+              upcomingReminderMessage({ name: r.member.nameBn, month: thisMonth, amount: r.currentOpen, dueDay: snap.settings.dueDay }),
+            ),
+          }))}
+        />
         <ul className="space-y-2">
           {upcoming.map((r) => (
             <li key={r.member.id} className="rounded-xl border bg-white p-3">

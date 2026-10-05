@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
+import { InstallHint } from "@/components/install-hint"
 import { Logo } from "@/components/logo"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
 import { getViewer } from "@/lib/auth/session"
@@ -121,6 +122,7 @@ export default async function DashboardPage() {
           </Link>
         ) : null}
       </section>
+      <InstallHint />
       {!me ? (
         <p className="rounded-xl bg-secondary px-3 py-2 text-center text-sm text-muted-foreground lg:col-span-2">
           কে কত দিয়েছেন, বকেয়া, তহবিল, আয়-ব্যয় — সব এখানে দেখা যায়। দেখতে লগইন লাগে না।
