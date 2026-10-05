@@ -92,6 +92,13 @@
       "when": 1791202723962,
       "tag": "0012_phone_international",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791203776732,
+      "tag": "0013_phone_wider",
+      "breakpoints": true
     }
   ]
 }

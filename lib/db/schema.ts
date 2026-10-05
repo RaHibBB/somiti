@@ -52,14 +52,14 @@ export const members = pgTable(
     id: serial("id").primaryKey(),
     memberNo: integer("member_no").notNull().unique(),
     nameBn: text("name_bn").notNull(),
-    phone: varchar("phone", { length: 11 }).unique(),
+    phone: varchar("phone", { length: 16 }).unique(),
     // Optional login + password-reset address, stored lower-case.
     email: varchar("email", { length: 254 }).unique(),
     role: roleEnum("role").notNull().default("member"),
     status: memberStatusEnum("status").notNull().default("active"),
     joinedOn: date("joined_on", { mode: "string" }).notNull(),
     nomineeName: text("nominee_name"),
-    nomineePhone: varchar("nominee_phone", { length: 11 }),
+    nomineePhone: varchar("nominee_phone", { length: 16 }),
     // Password hash (bcrypt). Column keeps its original name; it now holds any password, not only a 6-digit PIN.
     pinHash: text("pin_hash"),
     mustChangePin: boolean("must_change_pin").notNull().default(true),
