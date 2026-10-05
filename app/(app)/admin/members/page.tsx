@@ -8,6 +8,7 @@ import { taka, toBn } from "@/lib/format"
 export default async function AdminMembersPage() {
   await requireAdmin()
   const snap = await getSnapshot()
+  const cancelled = snap.members.filter((x) => x.member.status === "cancelled")
   return (
     <>
       <PageTitle
@@ -26,7 +27,7 @@ export default async function AdminMembersPage() {
         <Send className="size-5" /> সবাইকে লগইন তথ্য WhatsApp-এ পাঠান
       </Link>
       <ul className="divide-y overflow-hidden rounded-xl border bg-white">
-        {snap.members.map(({ member: m, sharesNow, due }) => (
+        {snap.members.filter((x) => x.member.status === "active").map(({ member: m, sharesNow, due }) => (
           <li key={m.id}>
             <Link href={`/admin/members/${m.id}`} className="flex min-h-16 items-center gap-3 px-3 py-2 active:bg-muted">
               <span className="w-10 shrink-0 rounded-md bg-secondary py-1 text-center text-sm font-semibold text-brand-navy">
@@ -53,6 +54,22 @@ export default async function AdminMembersPage() {
           </li>
         ))}
       </ul>
+      {cancelled.length > 0 ? (
+        <details className="mt-4 rounded-xl border bg-white">
+          <summary className="cursor-pointer px-3 py-3 text-base text-muted-foreground">বাতিল সদস্য ({toBn(cancelled.length)})</summary>
+          <ul className="divide-y border-t">
+            {cancelled.map(({ member: m }) => (
+              <li key={m.id}>
+                <Link href={`/admin/members/${m.id}`} className="flex min-h-12 items-center gap-3 px-3 py-2 text-muted-foreground active:bg-muted">
+                  <span className="w-10 shrink-0 text-center text-sm">{toBn(m.memberNo)}</span>
+                  <span className="min-w-0 flex-1 truncate text-base">{m.nameBn}</span>
+                  <ChevronRight className="size-5" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </>
   )
 }

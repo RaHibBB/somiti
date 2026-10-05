@@ -12,7 +12,8 @@ export default async function MembersPage() {
   const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const snap = await getSnapshot()
-  const rows: MemberRow[] = snap.members.map((m) => ({
+  // A cancelled membership leaves the member list (the person's page and the ledger keep the history).
+  const rows: MemberRow[] = snap.members.filter((m) => m.member.status === "active").map((m) => ({
     id: m.member.id,
     no: m.member.memberNo,
     name: m.member.nameBn,
