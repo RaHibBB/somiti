@@ -11,6 +11,8 @@ export const PASSWORD_MAX = 64 // bcrypt only uses the first 72 bytes
 /** Normalise a Bangladeshi mobile number to 01XXXXXXXXX, or null if invalid. */
 export function normalizePhone(input: string): string | null {
   let s = fromBn(input).replace(/[\s\-()]/g, "")
+  // A number from another country (e.g. +971…) is kept in full, with its "+".
+  if (/^\+(?!880)[1-9]\d{7,14}$/.test(s)) return s
   if (s.startsWith("+")) s = s.slice(1)
   if (s.startsWith("880")) s = s.slice(2)
   else if (s.startsWith("88") && s.length === 13) s = s.slice(2)

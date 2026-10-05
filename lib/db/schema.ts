@@ -73,9 +73,9 @@ export const members = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    check("members_phone_format", sql`${t.phone} IS NULL OR ${t.phone} ~ '^01[3-9][0-9]{8}$'`),
+    check("members_phone_format", sql`${t.phone} IS NULL OR ${t.phone} ~ '^(01[3-9][0-9]{8}|[+][1-9][0-9]{7,14})$'`),
     check("members_email_lowercase", sql`${t.email} IS NULL OR ${t.email} = lower(${t.email})`),
-    check("members_nominee_phone_format", sql`${t.nomineePhone} IS NULL OR ${t.nomineePhone} ~ '^01[3-9][0-9]{8}$'`),
+    check("members_nominee_phone_format", sql`${t.nomineePhone} IS NULL OR ${t.nomineePhone} ~ '^(01[3-9][0-9]{8}|[+][1-9][0-9]{7,14})$'`),
     check("members_member_no_positive", sql`${t.memberNo} > 0`),
   ],
 )

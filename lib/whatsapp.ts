@@ -5,6 +5,7 @@ export const SAMITI_NAME = "পূর্ব বামন সুন্দর স�
 
 /** "01712345678" → "8801712345678" (wa.me wants the country code, no +). */
 export function waNumber(phone: string | null | undefined): string | null {
+  if (phone && /^\+[1-9]\d{7,14}$/.test(phone)) return phone.slice(1)
   if (!phone || !/^01\d{9}$/.test(phone)) return null
   return "88" + phone
 }
