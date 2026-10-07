@@ -3,7 +3,12 @@ import { PrintDoc } from "@/components/print/print-doc"
 import { getSnapshot } from "@/lib/data"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 
-export const metadata = { title: "টাকা জমার রসিদ — সমিতি" }
+// The browser proposes the page title as the PDF file name: receipt number + member name.
+export async function generateMetadata({ params }: PageProps<"/print/receipt/[no]">) {
+  const no = Number((await params).no)
+  const m = (await getSnapshot()).members.find((x) => x.payments.some((p) => p.receiptNo === no))?.member
+  return { title: m ? `রসিদ ${receiptLabel(no)} - ${m.nameBn}` : "টাকা জমার রসিদ" }
+}
 
 /** Money receipt for one payment (or several, for a multi-month payment: /print/receipt/18?with=19,20). */
 export default async function PrintReceiptPage({ params, searchParams }: PageProps<"/print/receipt/[no]">) {

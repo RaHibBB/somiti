@@ -5,7 +5,12 @@ import { getViewer } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 
-export const metadata = { title: "সদস্য বিবরণী — সমিতি" }
+// The browser proposes the page title as the PDF file name, so it carries the member's name.
+export async function generateMetadata({ params }: PageProps<"/print/member/[id]">) {
+  const id = Number((await params).id)
+  const m = (await getSnapshot()).members.find((x) => x.member.id === id)?.member
+  return { title: m ? `সদস্য বিবরণী - ${toBn(m.memberNo)} ${m.nameBn}` : "সদস্য বিবরণী" }
+}
 
 export default async function PrintMemberPage({ params }: PageProps<"/print/member/[id]">) {
   const me = await getViewer()

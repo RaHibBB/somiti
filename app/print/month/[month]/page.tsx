@@ -7,7 +7,9 @@ import { getSnapshot, loadTransactions } from "@/lib/data"
 import { formatDate, monthLabel, receiptLabel, taka, toBn, TXN_TYPE_LABELS } from "@/lib/format"
 import { addMonths } from "@/lib/ledger"
 
-export const metadata = { title: "মাসিক রিপোর্ট — সমিতি" }
+export async function generateMetadata({ params }: PageProps<"/print/month/[month]">) {
+  return { title: `মাসিক রিপোর্ট ${(await params).month}` }
+}
 
 export default async function PrintMonthPage({ params }: PageProps<"/print/month/[month]">) {
   await getViewer()
