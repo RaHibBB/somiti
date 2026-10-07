@@ -21,6 +21,56 @@
   background: #fff;
 }
 
+.print-doc {
+  position: relative;
+}
+/* Fixed = repeats on every printed page; pointer-events off so it never blocks taps on screen. */
+.print-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8mm;
+  pointer-events: none;
+  opacity: 0.07;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.print-watermark svg {
+  width: 120mm;
+  height: 120mm;
+}
+.print-watermark p {
+  font-size: 20pt;
+  font-weight: 700;
+  color: #1d3f57;
+  text-align: center;
+  transform: rotate(-18deg);
+}
+.print-stamp {
+  position: fixed;
+  top: 42%;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  text-align: center;
+  font-size: 80pt;
+  font-weight: 800;
+  color: rgb(190 20 40 / 0.22);
+  transform: rotate(-20deg);
+  pointer-events: none;
+  letter-spacing: 0.1em;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.print-doc > :not(.print-watermark):not(.print-stamp) {
+  position: relative;
+  z-index: 1;
+}
+
 .print-doc table {
   width: 100%;
   border-collapse: collapse;
@@ -33,7 +83,7 @@
   vertical-align: top;
 }
 .print-doc th {
-  background: #eef3f6;
+  background: rgb(238 243 246 / 0.85);
   font-weight: 600;
 }
 .print-doc td.num,

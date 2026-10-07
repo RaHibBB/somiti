@@ -201,6 +201,14 @@ export function PayForm({
         >
           <MessageCircle className="size-6" /> WhatsApp-এ রসিদ পাঠান
         </a>
+        <a
+          href={`/print/receipt/${result.receipts[0].receiptNo}${result.receipts.length > 1 ? `?with=${result.receipts.slice(1).map((r) => r.receiptNo).join(",")}` : ""}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-12 w-full items-center justify-center rounded-xl border-2 border-brand-navy text-base font-semibold text-brand-navy active:bg-muted"
+        >
+          রসিদ PDF (নাম, লোগো ও ওয়াটারমার্কসহ)
+        </a>
         {!member.phone ? <p className="text-center text-sm text-muted-foreground">এই সদস্যের মোবাইল নম্বর নেই — WhatsApp-এ কাকে পাঠাবেন বেছে নিন।</p> : null}
         <Button size="xl" variant="outline" onClick={reset}>
           <RotateCcw className="size-5" /> আরেকটি জমা নিন

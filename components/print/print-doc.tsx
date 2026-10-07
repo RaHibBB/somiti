@@ -1,5 +1,7 @@
 import { getCurrentMember } from "@/lib/auth/session"
 import { formatDateTime, toBn } from "@/lib/format"
+import { LogoSvg } from "@/lib/logo-art"
+import { SAMITI_NAME } from "@/lib/whatsapp"
 import { Letterhead } from "./letterhead"
 import { PrintToolbar } from "./print-toolbar"
 
@@ -8,7 +10,18 @@ import { PrintToolbar } from "./print-toolbar"
  * authorisation block. When an admin downloads it, their name is printed as the person who
  * issued/certified it; for members and visitors a default "সমিতির পক্ষে" signature block is used.
  */
-export async function PrintDoc({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+export async function PrintDoc({
+  title,
+  subtitle,
+  stamp,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  /** Big red diagonal word across every page (e.g. "বাতিল" for a voided receipt). */
+  stamp?: string
+  children: React.ReactNode
+}) {
   const viewer = await getCurrentMember()
   const admin = viewer?.role === "admin" ? viewer : null
   const now = formatDateTime(new Date())
@@ -16,6 +29,16 @@ export async function PrintDoc({ title, subtitle, children }: { title: string; s
     <>
       <PrintToolbar />
       <div className="print-doc">
+        {/* Watermark: faint logo + samiti name behind the content, repeated on every printed page. */}
+        <div aria-hidden className="print-watermark">
+          <LogoSvg size={360} title="" />
+          <p>{SAMITI_NAME}</p>
+        </div>
+        {stamp ? (
+          <div aria-hidden className="print-stamp">
+            {stamp}
+          </div>
+        ) : null}
         <Letterhead />
         <div className="mt-3 mb-3 flex items-end justify-between gap-4">
           <div>

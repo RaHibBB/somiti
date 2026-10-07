@@ -113,6 +113,9 @@ export function MemberStatement({
                     {p.trxId ? ` · ${p.trxId}` : ""}
                   </p>
                   {isVoid ? <p className="text-sm font-medium text-destructive">বাতিল — {p.voidReason}</p> : null}
+                  <Link href={`/print/receipt/${p.receiptNo}`} className="mt-1 inline-flex items-center gap-1 text-sm text-brand-navy underline">
+                    <FileDown className="size-4" /> রসিদ PDF
+                  </Link>
                   {canVoid && !isVoid ? (
                     <div className="mt-1 flex justify-end">
                       <VoidButton kind="payment" id={p.id} label={`${receiptLabel(p.receiptNo)} (${monthLabel(p.forMonth)}, ${taka(p.amount)})`} />

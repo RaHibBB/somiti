@@ -97,6 +97,14 @@ export function BulkPayForm({
               >
                 <MessageCircle className="size-4" /> রসিদ
               </a>
+              <a
+                href={`/print/receipt/${r.receiptNo}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-10 shrink-0 items-center rounded-lg border px-3 text-sm font-semibold text-brand-navy"
+              >
+                PDF
+              </a>
             </li>
           ))}
         </ul>
