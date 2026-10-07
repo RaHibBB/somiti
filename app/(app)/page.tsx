@@ -9,7 +9,8 @@ import { getSnapshot, loadFund, loadLatestNotices } from "@/lib/data"
 import { getDb } from "@/lib/db"
 import { paymentReports, proposals, votes } from "@/lib/db/schema"
 import { closeExpiredProposals } from "@/lib/services/proposals"
-import { and, count, eq, notExists } from "drizzle-orm"
+import { after } from "next/server"
+import { and, count, eq, gt, isNull, notExists, or } from "drizzle-orm"
 import { CalendarClock, HandCoins, LogIn, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
 import { appUrl } from "@/lib/app-url"
 import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
@@ -21,7 +22,9 @@ export default async function DashboardPage() {
   const me = await getViewer()
   const adminUi = await showAdminUi(me)
   const db = getDb()
-  await closeExpiredProposals(db)
+  // Closing overdue votes is housekeeping: do it after the page is sent, not before.
+  after(() => closeExpiredProposals(db))
+  const now = new Date()
   const [snap, fund, notices, pendingVotes, [{ n: pendingReportCount }]] = await Promise.all([
     getSnapshot(),
     loadFund(),
@@ -33,6 +36,7 @@ export default async function DashboardPage() {
         me
           ? and(
               eq(proposals.status, "open"),
+              or(isNull(proposals.closesAt), gt(proposals.closesAt, now)),
               notExists(
                 db
                   .select({ one: votes.id })
@@ -40,7 +44,7 @@ export default async function DashboardPage() {
                   .where(and(eq(votes.proposalId, proposals.id), eq(votes.memberId, me.id))),
               ),
             )
-          : eq(proposals.status, "open"),
+          : and(eq(proposals.status, "open"), or(isNull(proposals.closesAt), gt(proposals.closesAt, now))),
       ),
     db.select({ n: count() }).from(paymentReports).where(eq(paymentReports.status, "pending")),
   ])
