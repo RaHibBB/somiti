@@ -3,21 +3,29 @@ import { PrintDoc } from "@/components/print/print-doc"
 import { getSnapshot } from "@/lib/data"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 
-// The browser proposes the page title as the PDF file name: receipt number + member name.
-export async function generateMetadata({ params }: PageProps<"/print/receipt/[no]">) {
+// The browser proposes the page title as the PDF file name: receipt number, member name and month(s).
+export async function generateMetadata({ params, searchParams }: PageProps<"/print/receipt/[no]">) {
   const no = Number((await params).no)
-  const m = (await getSnapshot()).members.find((x) => x.payments.some((p) => p.receiptNo === no))?.member
-  return { title: m ? `রসিদ ${receiptLabel(no)} - ${m.nameBn}` : "টাকা জমার রসিদ" }
+  const nos = parseNos(no, (await searchParams).with)
+  const entry = (await getSnapshot()).members.find((x) => x.payments.some((p) => p.receiptNo === no))
+  if (!entry) return { title: "টাকা জমার রসিদ" }
+  const pays = entry.payments.filter((p) => nos.includes(p.receiptNo)).sort((a, b) => a.receiptNo - b.receiptNo)
+  const months = pays.map((p) => monthLabel(p.forMonth)).join(", ")
+  return { title: `রসিদ ${receiptLabel(no)} - ${entry.member.nameBn} - ${months}` }
+}
+
+function parseNos(no: number, rawWith: string | string[] | undefined): number[] {
+  const extra = String(rawWith ?? "")
+    .split(",")
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n > 0)
+  return [...new Set([no, ...extra])].slice(0, 12)
 }
 
 /** Money receipt for one payment (or several, for a multi-month payment: /print/receipt/18?with=19,20). */
 export default async function PrintReceiptPage({ params, searchParams }: PageProps<"/print/receipt/[no]">) {
   const no = Number((await params).no)
-  const extra = String((await searchParams).with ?? "")
-    .split(",")
-    .map(Number)
-    .filter((n) => Number.isInteger(n) && n > 0)
-  const nos = [...new Set([no, ...extra])].slice(0, 12)
+  const nos = parseNos(no, (await searchParams).with)
   const snap = await getSnapshot()
   const entry = snap.members.find((m) => m.payments.some((p) => p.receiptNo === no))
   if (!entry) notFound()
