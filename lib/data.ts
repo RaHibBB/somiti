@@ -4,7 +4,7 @@ import { asc, desc, eq } from "drizzle-orm"
 import { cache } from "react"
 import type { DB } from "@/lib/db"
 import { getDb } from "@/lib/db"
-import { members, notices, payments, settings, shareHistory, transactions, type Member } from "@/lib/db/schema"
+import { members, notices, paymentReceivers, payments, settings, shareHistory, transactions, type Member } from "@/lib/db/schema"
 import { todayDhaka } from "@/lib/format"
 import {
   dueForMember,
@@ -54,12 +54,16 @@ export type SamitiSnapshot = {
 
 /** Every member (active and cancelled) with their computed balances. */
 export async function loadSnapshot(db: DB = getDb(), today = todayDhaka()): Promise<SamitiSnapshot> {
-  const [s, allMembers, allShares, allPayments] = await Promise.all([
+  const [s, allMembers, allShares, rawPayments, receiverFixes] = await Promise.all([
     loadSettings(db),
     db.select().from(members).orderBy(asc(members.memberNo)),
     db.select().from(shareHistory).orderBy(asc(shareHistory.id)),
     db.select().from(payments).orderBy(asc(payments.forMonth), asc(payments.receiptNo)),
+    db.select().from(paymentReceivers).orderBy(asc(paymentReceivers.id)),
   ])
+  // The latest correction (if any) says who really holds the money for a payment.
+  const fixedReceiver = new Map(receiverFixes.map((f) => [f.paymentId, f.receiverId]))
+  const allPayments = rawPayments.map((p) => (fixedReceiver.has(p.id) ? { ...p, receivedBy: fixedReceiver.get(p.id) ?? p.receivedBy } : p))
   const ls = toLedgerSettings(s)
   const sharesBy = groupBy(allShares, (r) => r.memberId)
   const paysBy = groupBy(allPayments, (r) => r.memberId)

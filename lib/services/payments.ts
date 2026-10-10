@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import type { DB } from "@/lib/db"
-import { members, payments, settings, type Payment } from "@/lib/db/schema"
+import { members, paymentReceivers, payments, settings, type Payment } from "@/lib/db/schema"
 import { monthLabel, todayDhaka } from "@/lib/format"
 import { allMonths } from "@/lib/ledger"
 import { writeAudit } from "@/lib/audit"
@@ -88,5 +88,42 @@ export async function recordPayments(db: DB, actorId: number, input: RecordPayme
       await enqueueSheet(tx, "payment", row.id)
     }
     return rows.sort((a, b) => a.receiptNo - b.receiptNo)
+  })
+}
+
+/**
+ * Corrects who holds the money for existing (valid) payments. The payment row itself stays frozen;
+ * the correction is appended to payment_receivers (insert-only) and audited.
+ */
+export async function changeReceiver(db: DB, actorId: number, paymentIds: number[], receiverId: number): Promise<number> {
+  const ids = [...new Set(paymentIds)]
+  if (ids.length === 0) throw new UserError("অন্তত একটি জমা বাছাই করুন।")
+  if (ids.length > 500) throw new UserError("একসাথে অনেক বেশি জমা বাছাই করা হয়েছে।")
+  return db.transaction(async (tx) => {
+    const [receiver] = await tx.select().from(members).where(eq(members.id, receiverId))
+    if (!receiver || receiver.status !== "active" || receiver.role !== "admin") {
+      throw new UserError("টাকা গ্রহণকারী একজন সক্রিয় অ্যাডমিন হতে হবে।")
+    }
+    let changed = 0
+    for (const id of ids) {
+      const [pay] = await tx.select().from(payments).where(eq(payments.id, id))
+      if (!pay) throw new UserError("জমা পাওয়া যায়নি।")
+      if (pay.status !== "valid") throw new UserError("বাতিল জমার গ্রহণকারী বদলানো যায় না।")
+      const [last] = await tx.select().from(paymentReceivers).where(eq(paymentReceivers.paymentId, id)).orderBy(desc(paymentReceivers.id)).limit(1)
+      const current = last?.receiverId ?? pay.receivedBy
+      if (current === receiverId) continue
+      await tx.insert(paymentReceivers).values({ paymentId: id, receiverId, setBy: actorId })
+      await writeAudit(tx, {
+        actorId,
+        action: "payment_receiver_change",
+        table: "payments",
+        rowId: id,
+        before: { receivedBy: current },
+        after: { receivedBy: receiverId },
+      })
+      await enqueueSheet(tx, "payment", id)
+      changed++
+    }
+    return changed
   })
 }

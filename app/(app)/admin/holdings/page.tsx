@@ -1,3 +1,5 @@
+import Link from "next/link"
+import { Pencil } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
@@ -39,6 +41,9 @@ export default async function HoldingsPage() {
       <p className="text-base text-muted-foreground">
         জমা নেওয়ার সময় যাঁর কাছে টাকা জমা আছে বলে লেখা হয়েছে, তাঁর নামে হিসাব। বাতিল রসিদ ধরা হয়নি।
       </p>
+      <Link href="/admin/holdings/fix" className="flex h-12 items-center justify-center gap-2 rounded-xl border-2 border-brand-navy bg-white text-base font-semibold text-brand-navy">
+        <Pencil className="size-5" /> ভুল হলে সংশোধন করুন
+      </Link>
       <div className="rounded-xl bg-secondary p-3">
         <p className="text-sm text-muted-foreground">মোট আদায় (সব সময়)</p>
         <p className="text-2xl font-bold text-brand-navy">{taka(grand)}</p>

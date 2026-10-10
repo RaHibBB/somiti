@@ -1,8 +1,12 @@
+import { sql } from "drizzle-orm"
 import { beforeAll, describe, expect, it, vi } from "vitest"
 import { members } from "@/lib/db/schema"
 import type { DB } from "@/lib/db"
 import { createMember } from "@/lib/services/members"
-import { recordPayments } from "@/lib/services/payments"
+import { changeReceiver, recordPayments } from "@/lib/services/payments"
+import { loadSnapshot } from "@/lib/data"
+import { auditLog, payments } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import { UserError } from "@/lib/services/errors"
 import { createTestDb } from "./helpers/test-db"
 
@@ -55,5 +59,26 @@ describe("received-by", () => {
     await expect(
       recordPayments(db, adminId, { ...pay({ receivedBy: memberId }, "r3"), items: [{ forMonth: "2026-12-01", amount: 500 }] }),
     ).rejects.toBeInstanceOf(UserError)
+  })
+
+  it("a correction changes who holds the money without touching the payment row, and is audited", async () => {
+    const [row] = await recordPayments(db, adminId, { ...pay({}, "r4"), items: [{ forMonth: "2027-01-01", amount: 500 }] })
+    expect(await changeReceiver(db, adminId, [row.id], otherAdminId)).toBe(1)
+    // The payment row itself is unchanged …
+    const [raw] = await db.select().from(payments).where(eq(payments.id, row.id))
+    expect(raw.receivedBy).toBe(adminId)
+    // … but the ledger snapshot reports the corrected holder.
+    const snap = await loadSnapshot(db)
+    const eff = snap.members.flatMap((m) => m.payments).find((p) => p.id === row.id)
+    expect(eff?.receivedBy).toBe(otherAdminId)
+    // Same target again is a no-op; the change is in the audit log.
+    expect(await changeReceiver(db, adminId, [row.id], otherAdminId)).toBe(0)
+    const logs = await db.select().from(auditLog).where(eq(auditLog.action, "payment_receiver_change"))
+    expect(logs).toHaveLength(1)
+  })
+
+  it("history rows cannot be edited or deleted", async () => {
+    await expect(db.execute(sql`UPDATE payment_receivers SET receiver_id = ${adminId}`)).rejects.toThrow()
+    await expect(db.execute(sql`DELETE FROM payment_receivers`)).rejects.toThrow()
   })
 })

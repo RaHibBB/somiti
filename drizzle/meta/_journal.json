@@ -99,6 +99,13 @@
       "when": 1791203776732,
       "tag": "0013_phone_wider",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791650353302,
+      "tag": "0014_payment_receivers",
+      "breakpoints": true
     }
   ]
 }

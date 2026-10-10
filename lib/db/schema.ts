@@ -235,6 +235,27 @@ export const passwordResets = pgTable(
   (t) => [index("password_resets_member_idx").on(t.memberId, t.createdAt)],
 )
 
+// ── Who holds the money: corrections ──────────────────────────────────────────
+// payments.received_by is frozen with the payment. If it was recorded wrongly, an admin adds a row
+// here; the latest row for a payment is the effective holder. Insert-only, so the history stays.
+export const paymentReceivers = pgTable(
+  "payment_receivers",
+  {
+    id: serial("id").primaryKey(),
+    paymentId: integer("payment_id")
+      .notNull()
+      .references(() => payments.id),
+    receiverId: integer("receiver_id")
+      .notNull()
+      .references(() => members.id),
+    setBy: integer("set_by")
+      .notNull()
+      .references(() => members.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("payment_receivers_payment_idx").on(t.paymentId, t.id)],
+)
+
 // ── Member-reported mobile payments (bKash/Nagad/…), approved by an admin ─────
 // The member says "I sent ৳X for these months, trx id Y"; an admin checks the wallet and
 // approves (→ real payment rows, receipts) or rejects with a reason.
