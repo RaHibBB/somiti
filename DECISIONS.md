@@ -356,3 +356,7 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 ## "কার কাছে টাকা" সংশোধন
 - লেজারের সুরক্ষা (payments-এ শুধু valid→void) ঢিলে করা হয়নি। বদলে insert-only টেবিল `payment_receivers` (migration 0014; UPDATE/DELETE/TRUNCATE নিষেধ)। সর্বশেষ সারিই কার্যকর গ্রহণকারী; `loadSnapshot` এটা বসিয়ে দেয়, তাই রসিদ PDF ও হোল্ডিং পাতা নিজে থেকে ঠিক দেখায়।
 - `/admin/holdings/fix`: জমা টিক দিয়ে অ্যাডমিন বাছাই → বদলান। প্রতিটি বদল অডিটে (`payment_receiver_change`, আগে/পরে)।
+
+## অক্টোবর ১ তারিখ থেকে হিসাব
+- আমদানি করা প্রথম ১১টি জমার (R-0001…R-0011, ৳১১,৫০০) তারিখ ছিল সেপ্টেম্বরের শেষে। সমিতির শুরু ১ অক্টোবর ২০২৬, তাই এগুলো ১ অক্টোবর তারিখে ধরা হয়েছে।
+- `payments.paid_on` জমার সাথে জমাট, তাই বদলানো হয়নি; insert-only `payment_date_fixes` (migration 0015) এ সংশোধন, `loadSnapshot` কার্যকর তারিখ বসায়। রসিদ নম্বর/টাকা অপরিবর্তিত; অডিটে `payment_date_fix`।

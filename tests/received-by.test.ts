@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest"
 import { members } from "@/lib/db/schema"
 import type { DB } from "@/lib/db"
 import { createMember } from "@/lib/services/members"
-import { changeReceiver, recordPayments } from "@/lib/services/payments"
+import { changeReceiver, fixPaymentDates, recordPayments } from "@/lib/services/payments"
 import { loadSnapshot } from "@/lib/data"
 import { auditLog, payments } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
@@ -77,8 +77,21 @@ describe("received-by", () => {
     expect(logs).toHaveLength(1)
   })
 
+  it("a date correction is shown everywhere but leaves the payment row and receipt untouched", async () => {
+    const [row] = await recordPayments(db, adminId, { ...pay({}, "r5"), items: [{ forMonth: "2027-02-01", amount: 500 }], paidOn: "2026-11-05" })
+    expect(await fixPaymentDates(db, adminId, [row.id], "2026-11-01")).toBe(1)
+    const [raw] = await db.select().from(payments).where(eq(payments.id, row.id))
+    expect(raw.paidOn).toBe("2026-11-05")
+    const eff = (await loadSnapshot(db)).members.flatMap((m) => m.payments).find((p) => p.id === row.id)
+    expect(eff?.paidOn).toBe("2026-11-01")
+    expect(eff?.receiptNo).toBe(row.receiptNo)
+    expect(await fixPaymentDates(db, adminId, [row.id], "2026-11-01")).toBe(0)
+    await expect(fixPaymentDates(db, adminId, [row.id], "2999-01-01")).rejects.toBeInstanceOf(UserError)
+  })
+
   it("history rows cannot be edited or deleted", async () => {
     await expect(db.execute(sql`UPDATE payment_receivers SET receiver_id = ${adminId}`)).rejects.toThrow()
+    await expect(db.execute(sql`UPDATE payment_date_fixes SET paid_on = '2026-01-01'`)).rejects.toThrow()
     await expect(db.execute(sql`DELETE FROM payment_receivers`)).rejects.toThrow()
   })
 })

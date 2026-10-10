@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<string, string> = {
   password_reset_requested: "পাসওয়ার্ড রিসেট লিংক চাওয়া",
   password_reset_done: "ইমেইল লিংকে পাসওয়ার্ড রিসেট",
   payment_create: "চাঁদা জমা",
+  payment_date_fix: "জমার তারিখ সংশোধন",
   payment_receiver_change: "টাকা কার কাছে আছে — সংশোধন",
   payment_void: "জমা বাতিল",
   transaction_create: "আয়/ব্যয় যোগ",

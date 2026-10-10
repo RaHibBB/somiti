@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm"
 import type { DB } from "@/lib/db"
-import { members, paymentReceivers, payments, settings, type Payment } from "@/lib/db/schema"
+import { members, paymentDateFixes, paymentReceivers, payments, settings, type Payment } from "@/lib/db/schema"
 import { monthLabel, todayDhaka } from "@/lib/format"
 import { allMonths } from "@/lib/ledger"
 import { writeAudit } from "@/lib/audit"
@@ -121,6 +121,35 @@ export async function changeReceiver(db: DB, actorId: number, paymentIds: number
         before: { receivedBy: current },
         after: { receivedBy: receiverId },
       })
+      await enqueueSheet(tx, "payment", id)
+      changed++
+    }
+    return changed
+  })
+}
+
+/**
+ * Corrects the date a payment was received (e.g. money collected before the samiti's first day is
+ * dated that first day). The payment row stays frozen; the correction is appended to
+ * payment_date_fixes (insert-only) and audited. The receipt number and amount never change.
+ */
+export async function fixPaymentDates(db: DB, actorId: number, paymentIds: number[], paidOn: string, today = todayDhaka()): Promise<number> {
+  const ids = [...new Set(paymentIds)]
+  if (ids.length === 0) throw new UserError("অন্তত একটি জমা বাছাই করুন।")
+  if (ids.length > 500) throw new UserError("একসাথে অনেক বেশি জমা বাছাই করা হয়েছে।")
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(paidOn)) throw new UserError("তারিখ সঠিক নয়।")
+  if (paidOn > today) throw new UserError("জমার তারিখ ভবিষ্যতের হতে পারে না।")
+  return db.transaction(async (tx) => {
+    let changed = 0
+    for (const id of ids) {
+      const [pay] = await tx.select().from(payments).where(eq(payments.id, id))
+      if (!pay) throw new UserError("জমা পাওয়া যায়নি।")
+      if (pay.status !== "valid") throw new UserError("বাতিল জমার তারিখ বদলানো যায় না।")
+      const [last] = await tx.select().from(paymentDateFixes).where(eq(paymentDateFixes.paymentId, id)).orderBy(desc(paymentDateFixes.id)).limit(1)
+      const current = last?.paidOn ?? pay.paidOn
+      if (current === paidOn) continue
+      await tx.insert(paymentDateFixes).values({ paymentId: id, paidOn, setBy: actorId })
+      await writeAudit(tx, { actorId, action: "payment_date_fix", table: "payments", rowId: id, before: { paidOn: current }, after: { paidOn } })
       await enqueueSheet(tx, "payment", id)
       changed++
     }

@@ -256,6 +256,25 @@ export const paymentReceivers = pgTable(
   (t) => [index("payment_receivers_payment_idx").on(t.paymentId, t.id)],
 )
 
+// ── Date corrections ──────────────────────────────────────────────────────────
+// payments.paid_on is frozen with the payment. A wrongly dated payment gets a row here; the latest
+// row is the effective date. Insert-only, so the history stays.
+export const paymentDateFixes = pgTable(
+  "payment_date_fixes",
+  {
+    id: serial("id").primaryKey(),
+    paymentId: integer("payment_id")
+      .notNull()
+      .references(() => payments.id),
+    paidOn: date("paid_on", { mode: "string" }).notNull(),
+    setBy: integer("set_by")
+      .notNull()
+      .references(() => members.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("payment_date_fixes_payment_idx").on(t.paymentId, t.id)],
+)
+
 // ── Member-reported mobile payments (bKash/Nagad/…), approved by an admin ─────
 // The member says "I sent ৳X for these months, trx id Y"; an admin checks the wallet and
 // approves (→ real payment rows, receipts) or rejects with a reason.
