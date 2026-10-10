@@ -15,6 +15,8 @@ export type RecordPaymentsInput = {
   trxId: string | null
   note: string | null
   clientRef: string | null
+  /** The admin who actually holds the money (defaults to whoever enters the record). */
+  receivedBy?: number
 }
 
 /**
@@ -58,6 +60,13 @@ export async function recordPayments(db: DB, actorId: number, input: RecordPayme
     const [member] = await tx.select().from(members).where(eq(members.id, input.memberId))
     if (!member) throw new UserError("সদস্য পাওয়া যায়নি।")
     if (member.status !== "active") throw new UserError("বাতিল সদস্যের জমা নেওয়া যাবে না।")
+    const receiverId = input.receivedBy ?? actorId
+    if (receiverId !== actorId) {
+      const [receiver] = await tx.select().from(members).where(eq(members.id, receiverId))
+      if (!receiver || receiver.status !== "active" || receiver.role !== "admin") {
+        throw new UserError("টাকা গ্রহণকারী একজন সক্রিয় অ্যাডমিন হতে হবে।")
+      }
+    }
     const rows = await tx
       .insert(payments)
       .values(
@@ -69,7 +78,7 @@ export async function recordPayments(db: DB, actorId: number, input: RecordPayme
           method: input.method,
           trxId: input.trxId,
           note: input.note,
-          receivedBy: actorId,
+          receivedBy: receiverId,
           clientRef: input.clientRef,
         })),
       )

@@ -11,6 +11,7 @@ import { NativeSelect } from "@/components/forms/native-select"
 import { METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 import { receiptMessage, waLink } from "@/lib/whatsapp"
 import { cn } from "@/lib/utils"
+import { ReceiverSelect, type Receiver } from "@/components/receiver-select"
 import { bulkPayAction, type BulkResult } from "./actions"
 
 export type BulkMember = { id: number; no: number; name: string; remaining: number; expected: number }
@@ -22,16 +23,21 @@ export function BulkPayForm({
   months,
   members,
   today,
+  receivers,
+  meId,
 }: {
   month: string
   months: string[]
   members: BulkMember[]
   today: string
+  receivers: Receiver[]
+  meId: number
 }) {
   const router = useRouter()
   const payable = members.filter((m) => m.remaining > 0)
   const [picked, setPicked] = useState<Set<number>>(new Set())
   const [method, setMethod] = useState<Method>("cash")
+  const [receivedBy, setReceivedBy] = useState(meId)
   const [paidOn, setPaidOn] = useState(today)
   const [error, setError] = useState<string>()
   const [result, setResult] = useState<BulkResult | null>(null)
@@ -55,10 +61,10 @@ export function BulkPayForm({
     if (picked.size === 0) return setError("অন্তত একজন সদস্য বাছাই করুন।")
     setError(undefined)
     const ids = [...picked].sort((a, b) => a - b)
-    const key = JSON.stringify([month, ids, paidOn, method])
+    const key = JSON.stringify([month, ids, paidOn, method, receivedBy])
     if (!refs.current.has(key)) refs.current.set(key, crypto.randomUUID())
     start(async () => {
-      const res = await bulkPayAction({ forMonth: month, memberIds: ids, paidOn, method, batchRef: refs.current.get(key)! })
+      const res = await bulkPayAction({ forMonth: month, memberIds: ids, paidOn, method, receivedBy, batchRef: refs.current.get(key)! })
       if (res.ok) setResult(res.data)
       else setError(res.error)
     })
@@ -218,6 +224,8 @@ export function BulkPayForm({
           ))}
         </div>
       </section>
+
+      <ReceiverSelect receivers={receivers} value={receivedBy} onChange={setReceivedBy} meId={meId} />
 
       <Field label="জমার তারিখ" htmlFor="paidOn">
         <Input id="paidOn" type="date" value={paidOn} max={today} onChange={(e) => setPaidOn(e.target.value)} />

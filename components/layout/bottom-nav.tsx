@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, User, Users, Grid3x3, Menu, HandCoins, Receipt } from "lucide-react"
+import { Home, User, Users, Grid3x3, Menu, HandCoins, Receipt, ShieldAlert } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Item = { href: string; label: string; icon: React.ComponentType<{ className?: string }> }
@@ -20,7 +20,7 @@ const ADMIN_ITEMS: Item[] = [
   MEMBER_ITEMS[0],
   { href: "/admin/pay", label: "জমা নিন", icon: HandCoins },
   MEMBER_ITEMS[2],
-  MEMBER_ITEMS[3],
+  { href: "/admin/dues", label: "বকেয়া", icon: ShieldAlert },
   MEMBER_ITEMS[4],
 ]
 

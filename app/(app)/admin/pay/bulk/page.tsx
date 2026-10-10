@@ -7,7 +7,7 @@ import { BulkPayForm, type BulkMember } from "./bulk-form"
 export const metadata = { title: "একসাথে জমা — সমিতি" }
 
 export default async function BulkPayPage({ searchParams }: PageProps<"/admin/pay/bulk">) {
-  await requireAdmin()
+  const admin = await requireAdmin()
   const snap = await getSnapshot()
   const months = snap.members[0]?.lines.map((l) => l.month) ?? []
   const requested = (await searchParams).month
@@ -25,13 +25,14 @@ export default async function BulkPayPage({ searchParams }: PageProps<"/admin/pa
         expected: line?.expected ?? 0,
       }
     })
+  const receivers = snap.members.filter((m) => m.member.status === "active" && m.member.role === "admin").map((m) => ({ id: m.member.id, name: m.member.nameBn }))
   // Offer months from the start up to two months ahead.
   const idx = months.indexOf(thisMonth)
   const selectable = idx < 0 ? months : months.slice(0, idx + 3)
   return (
     <>
       <PageTitle>একসাথে জমা</PageTitle>
-      <BulkPayForm key={month} month={month} months={selectable} members={members} today={snap.today} />
+      <BulkPayForm key={month} month={month} months={selectable} members={members} today={snap.today} receivers={receivers} meId={admin.id} />
     </>
   )
 }

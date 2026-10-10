@@ -24,6 +24,7 @@ const schema = z.object({
   trxId: optText(60),
   note: optText(300),
   clientRef: z.string().uuid().nullable(),
+  receivedBy: z.number().int().positive().optional(),
 })
 
 export type TakePaymentResult = {

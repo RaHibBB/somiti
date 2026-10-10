@@ -28,6 +28,8 @@ export function receiptMessage(input: {
   dueAfter: number
   /** This month's amount still unpaid (inside the 1st–10th window), after this payment. */
   currentOpenAfter?: number
+  /** The admin who took the money. */
+  receivedBy?: string
 }): string {
   const after: string[] = []
   if (input.dueAfter > 0) after.push(`বর্তমান বকেয়া: ${taka(input.dueAfter)}`)
@@ -41,6 +43,7 @@ export function receiptMessage(input: {
     ...lines,
     input.receipts.length > 1 ? `মোট: ${taka(total)}` : null,
     `তারিখ: ${formatDate(input.paidOn)}`,
+    input.receivedBy ? `টাকা গ্রহণ করেছেন: ${input.receivedBy}` : null,
     ...after,
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ]

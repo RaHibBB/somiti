@@ -9,9 +9,10 @@ import { PayForm, type PayMember } from "./pay-form"
 export const metadata = { title: "জমা নিন — সমিতি" }
 
 export default async function TakePaymentPage({ searchParams }: PageProps<"/admin/pay">) {
-  await requireAdmin()
+  const admin = await requireAdmin()
   const snap = await getSnapshot()
   const { member: pre } = await searchParams
+  const receivers = snap.members.filter((m) => m.member.status === "active" && m.member.role === "admin").map((m) => ({ id: m.member.id, name: m.member.nameBn }))
   const list: PayMember[] = snap.members
     .filter((m) => m.member.status === "active")
     .map((m) => ({
@@ -42,6 +43,8 @@ export default async function TakePaymentPage({ searchParams }: PageProps<"/admi
         thisMonth={monthOf(snap.today)}
         sharePrice={snap.settings.sharePrice}
         preselectId={preselect}
+        receivers={receivers}
+        meId={admin.id}
       />
     </>
   )

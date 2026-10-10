@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FormError } from "@/components/forms/form-bits"
 import { MemberPicker } from "@/components/member-picker"
+import { ReceiverSelect, type Receiver } from "@/components/receiver-select"
 import { fromBn, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 import { allocatePayment } from "@/lib/ledger"
 import { receiptMessage, waLink } from "@/lib/whatsapp"
@@ -44,12 +45,16 @@ export function PayForm({
   thisMonth,
   sharePrice,
   preselectId,
+  receivers,
+  meId,
 }: {
   members: PayMember[]
   today: string
   thisMonth: string
   sharePrice: number
   preselectId?: number
+  receivers: Receiver[]
+  meId: number
 }) {
   const [memberId, setMemberId] = useState<number | null>(
     preselectId && members.some((m) => m.id === preselectId) ? preselectId : null,
@@ -62,6 +67,8 @@ export function PayForm({
   const [manual, setManual] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
   const [method, setMethod] = useState<Method>("cash")
+  // Who actually holds the money (may be another admin who collected it elsewhere).
+  const [receivedBy, setReceivedBy] = useState(meId)
   const [trxId, setTrxId] = useState("")
   const [note, setNote] = useState("")
   const [paidOn, setPaidOn] = useState(today)
@@ -126,6 +133,7 @@ export function PayForm({
     setManual(false)
     setSelected([])
     setMethod("cash")
+    setReceivedBy(meId)
     setTrxId("")
     setNote("")
     setPaidOn(today)
@@ -141,7 +149,7 @@ export function PayForm({
     if (plan.items.some((i) => !Number.isInteger(i.amount) || i.amount <= 0)) return setError("টাকার পরিমাণ সঠিক নয়।")
     setError(undefined)
     const items = plan.items.map(({ forMonth, amount: a }) => ({ forMonth, amount: a }))
-    const payloadKey = JSON.stringify([member.id, items, paidOn, method])
+    const payloadKey = JSON.stringify([member.id, items, paidOn, method, receivedBy])
     if (!refs.current.has(payloadKey)) refs.current.set(payloadKey, newRef())
     const clientRef = refs.current.get(payloadKey) ?? null
     startTransition(async () => {
@@ -153,6 +161,7 @@ export function PayForm({
         trxId: method === "cash" ? "" : trxId,
         note,
         clientRef,
+        receivedBy,
       })
       if (res.ok) setResult(res.data)
       else setError(res.error)
@@ -167,6 +176,7 @@ export function PayForm({
       paidOn: result.paidOn,
       dueAfter: result.dueAfter,
       currentOpenAfter: result.currentOpenAfter,
+      receivedBy: receivers.find((r) => r.id === receivedBy)?.name,
     })
     return (
       <div className="space-y-5">
@@ -437,6 +447,8 @@ export function PayForm({
               ))}
             </div>
           </section>
+
+          <ReceiverSelect receivers={receivers} value={receivedBy} onChange={setReceivedBy} meId={meId} />
 
           {method !== "cash" ? (
             <Field label="ট্রানজেকশন আইডি (ঐচ্ছিক)" htmlFor="trx">

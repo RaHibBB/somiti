@@ -54,7 +54,7 @@ export function Sidebar({ mode }: { mode: "admin" | "member" | "guest" }) {
       </Link>
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4" aria-label="প্রধান মেনু">
-        <Group items={MAIN_NAV} pathname={pathname} />
+        <Group items={mode === "admin" ? MAIN_NAV.filter((i) => i.href !== "/grid") : MAIN_NAV} pathname={pathname} />
         {mode === "admin" ? <Group title="অ্যাডমিনের কাজ" items={ADMIN_NAV} pathname={pathname} /> : null}
         <Group title="রিপোর্ট" items={REPORT_NAV} pathname={pathname} />
         {mode !== "guest" ? <Group title="আমার" items={MY_NAV} pathname={pathname} /> : null}

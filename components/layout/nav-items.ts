@@ -21,6 +21,7 @@ import {
   UserCog,
   Users,
   Vote,
+  Wallet,
 } from "lucide-react"
 
 export type NavItem = {
@@ -65,6 +66,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/pay/bulk", label: "একসাথে অনেকের জমা (সভার দিন)", short: "একসাথে জমা", icon: Users },
   { href: "/admin/reports", label: "বিকাশ/নগদের জানানো জমা যাচাই", short: "জানানো জমা যাচাই", icon: Smartphone },
   { href: "/admin/dues", label: "বকেয়া ও বাকি", icon: ShieldAlert },
+  { href: "/admin/holdings", label: "কার কাছে কত টাকা", icon: Wallet },
   { href: "/admin/members", label: "সদস্য ব্যবস্থাপনা", icon: UserCog },
   { href: "/admin/invite", label: "লগইন তথ্য WhatsApp-এ পাঠান", short: "লগইন তথ্য পাঠান", icon: Send },
   { href: "/admin/transactions/new", label: "আয়/ব্যয়/বিনিয়োগ যোগ করুন", short: "আয়-ব্যয় যোগ", icon: ClipboardList },

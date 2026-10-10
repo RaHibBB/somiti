@@ -17,6 +17,7 @@ const schema = z.object({
   // One random id per batch; each member's payment gets `${batchRef}:${memberId}`, so retrying the
   // same batch never records anyone twice.
   batchRef: z.string().uuid(),
+  receivedBy: z.number().int().positive().optional(),
 })
 
 export type BulkResult = {
@@ -59,6 +60,7 @@ export async function bulkPayAction(input: z.input<typeof schema>) {
           trxId: null,
           note: "একসাথে জমা",
           clientRef,
+          receivedBy: data.receivedBy,
         })
         result.saved.push({ memberId, name, phone: entry.member.phone, receiptNo: p.receiptNo, amount: p.amount, dueAfter: Math.max(0, entry.due - p.amount) })
       } catch (err) {
