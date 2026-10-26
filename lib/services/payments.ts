@@ -1,11 +1,12 @@
 import { desc, eq } from "drizzle-orm"
-import type { DB } from "@/lib/db"
+import type { DB, Tx } from "@/lib/db"
 import { members, paymentDateFixes, paymentReceivers, payments, settings, type Payment } from "@/lib/db/schema"
 import { monthLabel, todayDhaka } from "@/lib/format"
 import { allMonths } from "@/lib/ledger"
 import { writeAudit } from "@/lib/audit"
 import { enqueueSheet } from "@/lib/outbox"
 import { UserError } from "./errors"
+import { assertMonthOpen } from "./month-close"
 
 export type RecordPaymentsInput = {
   memberId: number
@@ -34,6 +35,7 @@ export async function recordPayments(db: DB, actorId: number, input: RecordPayme
   }
 
   if (input.paidOn > today) throw new UserError("জমার তারিখ ভবিষ্যতের হতে পারে না।")
+  await assertMonthOpen(db, input.paidOn)
   // Only months the ledger knows about: start_month … end of term (or the current month if later).
   const [s] = await db.select().from(settings).limit(1)
   const known = allMonths({ sharePrice: s.sharePrice, startMonth: s.startMonth, dueDay: s.dueDay, termMonths: s.termMonths }, today)
@@ -95,6 +97,12 @@ export async function recordPayments(db: DB, actorId: number, input: RecordPayme
  * Corrects who holds the money for existing (valid) payments. The payment row itself stays frozen;
  * the correction is appended to payment_receivers (insert-only) and audited.
  */
+/** The date a payment counts under: the latest date correction, else the original date. */
+export async function effectivePaidOn(db: DB | Tx, paymentId: number, original: string): Promise<string> {
+  const [last] = await db.select().from(paymentDateFixes).where(eq(paymentDateFixes.paymentId, paymentId)).orderBy(desc(paymentDateFixes.id)).limit(1)
+  return last?.paidOn ?? original
+}
+
 export async function changeReceiver(db: DB, actorId: number, paymentIds: number[], receiverId: number): Promise<number> {
   const ids = [...new Set(paymentIds)]
   if (ids.length === 0) throw new UserError("অন্তত একটি জমা বাছাই করুন।")
@@ -109,6 +117,7 @@ export async function changeReceiver(db: DB, actorId: number, paymentIds: number
       const [pay] = await tx.select().from(payments).where(eq(payments.id, id))
       if (!pay) throw new UserError("জমা পাওয়া যায়নি।")
       if (pay.status !== "valid") throw new UserError("বাতিল জমার গ্রহণকারী বদলানো যায় না।")
+      await assertMonthOpen(tx, await effectivePaidOn(tx, pay.id, pay.paidOn))
       const [last] = await tx.select().from(paymentReceivers).where(eq(paymentReceivers.paymentId, id)).orderBy(desc(paymentReceivers.id)).limit(1)
       const current = last?.receiverId ?? pay.receivedBy
       if (current === receiverId) continue
@@ -145,6 +154,8 @@ export async function fixPaymentDates(db: DB, actorId: number, paymentIds: numbe
       const [pay] = await tx.select().from(payments).where(eq(payments.id, id))
       if (!pay) throw new UserError("জমা পাওয়া যায়নি।")
       if (pay.status !== "valid") throw new UserError("বাতিল জমার তারিখ বদলানো যায় না।")
+      await assertMonthOpen(tx, await effectivePaidOn(tx, pay.id, pay.paidOn))
+      await assertMonthOpen(tx, paidOn)
       const [last] = await tx.select().from(paymentDateFixes).where(eq(paymentDateFixes.paymentId, id)).orderBy(desc(paymentDateFixes.id)).limit(1)
       const current = last?.paidOn ?? pay.paidOn
       if (current === paidOn) continue

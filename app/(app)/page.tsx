@@ -11,7 +11,7 @@ import { paymentReports, proposals, votes } from "@/lib/db/schema"
 import { closeExpiredProposals } from "@/lib/services/proposals"
 import { after } from "next/server"
 import { and, count, eq, gt, isNull, notExists, or } from "drizzle-orm"
-import { CalendarClock, HandCoins, LogIn, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
+import { CalendarCheck, CalendarClock, HandCoins, LogIn, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
 import { appUrl } from "@/lib/app-url"
 import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
 import { dateLongBn, formatDate, monthLabel, taka, toBn } from "@/lib/format"
@@ -158,6 +158,12 @@ export default async function DashboardPage() {
             className="flex h-12 items-center justify-center gap-2 rounded-2xl border bg-white text-base font-medium text-brand-navy active:bg-muted lg:h-20 lg:flex-col lg:gap-1 lg:text-base lg:font-semibold"
           >
             <UserPlus className="size-5" /> নতুন সদস্য
+          </Link>
+          <Link
+            href="/admin/month"
+            className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-brand-navy bg-white text-base font-semibold text-brand-navy active:bg-muted lg:col-span-4"
+          >
+            <CalendarCheck className="size-5" /> {monthLabel(thisMonth)}-এর কাজ ও মাস বন্ধ
           </Link>
         </div>
       ) : null}

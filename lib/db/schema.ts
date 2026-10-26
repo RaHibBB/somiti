@@ -256,6 +256,79 @@ export const paymentReceivers = pgTable(
   (t) => [index("payment_receivers_payment_idx").on(t.paymentId, t.id)],
 )
 
+// ── Month close ───────────────────────────────────────────────────────────────
+// An admin closes a month ("this month's accounts are final"); reopening needs a reason. Events are
+// insert-only; the latest event per month says whether it is closed. `snapshot` keeps the numbers
+// as they were when closed.
+export const monthCloseEvents = pgTable(
+  "month_close_events",
+  {
+    id: serial("id").primaryKey(),
+    month: date("month", { mode: "string" }).notNull(),
+    kind: text("kind", { enum: ["close", "reopen"] }).notNull(),
+    reason: text("reason"),
+    snapshot: jsonb("snapshot"),
+    byId: integer("by_id")
+      .notNull()
+      .references(() => members.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("month_close_events_month_idx").on(t.month, t.id),
+    check("month_close_first_of_month", sql`EXTRACT(DAY FROM ${t.month}) = 1`),
+    check("month_reopen_has_reason", sql`${t.kind} = 'close' OR (${t.reason} IS NOT NULL AND length(trim(${t.reason})) > 0)`),
+  ],
+)
+
+// The monthly checklist's manual ticks (reminders sent, group message sent, …). Not financial: a tick can be undone.
+export const monthTasks = pgTable(
+  "month_tasks",
+  {
+    id: serial("id").primaryKey(),
+    month: date("month", { mode: "string" }).notNull(),
+    key: text("key").notNull(),
+    doneBy: integer("done_by")
+      .notNull()
+      .references(() => members.id),
+    createdAt: createdAt(),
+  },
+  (t) => [unique("month_tasks_month_key").on(t.month, t.key)],
+)
+
+// ── Money handed over: admin → bank, or admin → another admin ─────────────────
+// Together with payments.received_by this gives "how much does each admin still hold".
+export const cashHandovers = pgTable(
+  "cash_handovers",
+  {
+    id: serial("id").primaryKey(),
+    fromId: integer("from_id")
+      .notNull()
+      .references(() => members.id),
+    // null = deposited in the samiti's bank account
+    toId: integer("to_id").references(() => members.id),
+    amount: integer("amount").notNull(),
+    date: date("date", { mode: "string" }).notNull(),
+    note: text("note"),
+    createdBy: integer("created_by")
+      .notNull()
+      .references(() => members.id),
+    status: recordStatusEnum("status").notNull().default("valid"),
+    voidReason: text("void_reason"),
+    voidedBy: integer("voided_by").references(() => members.id),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("cash_handovers_amount_positive", sql`${t.amount} > 0`),
+    check("cash_handovers_not_to_self", sql`${t.toId} IS NULL OR ${t.toId} <> ${t.fromId}`),
+    check(
+      "cash_handovers_void_has_reason",
+      sql`${t.status} = 'valid' OR (${t.voidReason} IS NOT NULL AND length(trim(${t.voidReason})) > 0 AND ${t.voidedAt} IS NOT NULL)`,
+    ),
+  ],
+)
+export type CashHandover = typeof cashHandovers.$inferSelect
+
 // ── Date corrections ──────────────────────────────────────────────────────────
 // payments.paid_on is frozen with the payment. A wrongly dated payment gets a row here; the latest
 // row is the effective date. Insert-only, so the history stays.

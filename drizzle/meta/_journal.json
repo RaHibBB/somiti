@@ -113,6 +113,13 @@
       "when": 1791651675844,
       "tag": "0015_payment_date_fixes",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792990531154,
+      "tag": "0016_month_close_and_handovers",
+      "breakpoints": true
     }
   ]
 }

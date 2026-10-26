@@ -3,6 +3,9 @@ import { Pencil } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
+import { getDb } from "@/lib/db"
+import { cashHandovers } from "@/lib/db/schema"
+import { holderBalances } from "@/lib/holdings"
 import { METHOD_LABELS, monthLabel, taka, toBn } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +19,7 @@ type Row = { id: number | null; name: string; cash: number; digital: Record<stri
 export default async function HoldingsPage({ searchParams }: PageProps<"/admin/holdings">) {
   await requireAdmin()
   const snap = await getSnapshot()
+  const handovers = await getDb().select().from(cashHandovers)
   const byId = new Map(snap.members.map((m) => [m.member.id, m.member]))
   const valid = snap.members.flatMap((m) => m.payments).filter((p) => p.status === "valid")
 
@@ -54,6 +58,8 @@ export default async function HoldingsPage({ searchParams }: PageProps<"/admin/h
     return { month: m, per, total: inMonth.reduce((s, p) => s + p.amount, 0) }
   })
 
+  const { holders: balances, bankTotal } = holderBalances(valid, handovers)
+
   const chip = (active: boolean) =>
     cn("shrink-0 rounded-full border px-3 py-1.5 text-sm", active ? "border-brand-navy bg-brand-navy font-semibold text-white" : "bg-white")
 
@@ -66,6 +72,29 @@ export default async function HoldingsPage({ searchParams }: PageProps<"/admin/h
       <Link href="/admin/holdings/fix" className="flex h-12 items-center justify-center gap-2 rounded-xl border-2 border-brand-navy bg-white text-base font-semibold text-brand-navy">
         <Pencil className="size-5" /> ভুল হলে সংশোধন করুন
       </Link>
+
+      <section className="space-y-2 rounded-2xl border-2 border-brand-navy bg-white p-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-lg font-semibold text-brand-navy">এখন কার হাতে কত আছে</h2>
+          <Link href="/admin/handover" className="text-sm text-brand-navy underline">
+            হস্তান্তর লিখুন
+          </Link>
+        </div>
+        <ul className="divide-y">
+          {balances.map((b) => (
+            <li key={b.id} className="py-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-base">{nameOf(b.id)}</span>
+                <b className={cn("text-xl", b.balance < 0 && "text-destructive")}>{taka(b.balance)}</b>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                আদায় {taka(b.collected)} − দিয়েছেন {taka(b.handedOut)} + পেয়েছেন {taka(b.receivedIn)}
+              </p>
+            </li>
+          ))}
+        </ul>
+        <p className="text-sm text-muted-foreground">ব্যাংকে জমা হয়েছে মোট {taka(bankTotal)}</p>
+      </section>
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         <Link href="/admin/holdings" className={chip(!month)}>

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { FormError, SubmitButton } from "@/components/forms/form-bits"
 import { voidAction } from "./actions"
 
-export function VoidButton({ kind, id, label }: { kind: "payment" | "transaction"; id: number; label: string }) {
+export function VoidButton({ kind, id, label }: { kind: "payment" | "transaction" | "handover"; id: number; label: string }) {
   const [open, setOpen] = useState(false)
   const [state, action] = useActionState(voidAction, undefined)
   if (state?.ok) return <p className="text-sm font-semibold text-destructive">বাতিল করা হয়েছে</p>

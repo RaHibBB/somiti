@@ -4,6 +4,8 @@ import { payments, transactions } from "@/lib/db/schema"
 import { writeAudit } from "@/lib/audit"
 import { enqueueSheet } from "@/lib/outbox"
 import { UserError } from "./errors"
+import { assertMonthOpen } from "./month-close"
+import { effectivePaidOn } from "./payments"
 
 function checkReason(reason: string) {
   const r = reason.trim()
@@ -17,6 +19,7 @@ export async function voidPayment(db: DB, actorId: number, paymentId: number, re
     const [before] = await tx.select().from(payments).where(eq(payments.id, paymentId)).for("update")
     if (!before) throw new UserError("জমা পাওয়া যায়নি।")
     if (before.status === "void") throw new UserError("এই জমা আগেই বাতিল করা হয়েছে।")
+    await assertMonthOpen(tx, await effectivePaidOn(tx, before.id, before.paidOn))
     const [after] = await tx
       .update(payments)
       .set({ status: "void", voidReason, voidedBy: actorId, voidedAt: new Date() })
@@ -34,6 +37,7 @@ export async function voidTransaction(db: DB, actorId: number, txnId: number, re
     const [before] = await tx.select().from(transactions).where(eq(transactions.id, txnId)).for("update")
     if (!before) throw new UserError("লেনদেন পাওয়া যায়নি।")
     if (before.status === "void") throw new UserError("এই লেনদেন আগেই বাতিল করা হয়েছে।")
+    await assertMonthOpen(tx, before.date)
     const [after] = await tx
       .update(transactions)
       .set({ status: "void", voidReason, voidedBy: actorId, voidedAt: new Date() })

@@ -5,6 +5,7 @@ import { writeAudit } from "@/lib/audit"
 import { enqueueSheet } from "@/lib/outbox"
 import { todayDhaka } from "@/lib/format"
 import { UserError } from "./errors"
+import { assertMonthOpen } from "./month-close"
 
 export type TransactionInput = {
   date: string
@@ -29,6 +30,7 @@ export async function createTransaction(db: DB, actorId: number, input: Transact
     // Record the vote that authorised it, unless the admin typed something else.
     if (!input.voteResult) input = { ...input, voteResult: `হ্যাঁ ${p.yesCount ?? 0}, না ${p.noCount ?? 0} (প্রস্তাব #${p.id})` }
   }
+  await assertMonthOpen(db, input.date)
   return db.transaction(async (tx) => {
     const [row] = await tx
       .insert(transactions)

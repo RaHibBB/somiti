@@ -1,6 +1,8 @@
 // The app's menu, in one place: used by the phone "আরও" page and the laptop sidebar.
 import {
+  ArrowRightLeft,
   Ban,
+  CalendarCheck,
   BookOpen,
   ClipboardList,
   Download,
@@ -62,11 +64,13 @@ export const MY_NAV: NavItem[] = [
 
 /** Admins (admin view). */
 export const ADMIN_NAV: NavItem[] = [
+  { href: "/admin/month", label: "মাসের কাজ (চেকলিস্ট ও মাস বন্ধ)", short: "মাসের কাজ", icon: CalendarCheck },
   { href: "/admin/pay", label: "জমা নিন", icon: HandCoins },
   { href: "/admin/pay/bulk", label: "একসাথে অনেকের জমা (সভার দিন)", short: "একসাথে জমা", icon: Users },
   { href: "/admin/reports", label: "বিকাশ/নগদের জানানো জমা যাচাই", short: "জানানো জমা যাচাই", icon: Smartphone },
   { href: "/admin/dues", label: "বকেয়া ও বাকি", icon: ShieldAlert },
   { href: "/admin/holdings", label: "কার কাছে কত টাকা", icon: Wallet },
+  { href: "/admin/handover", label: "টাকা হস্তান্তর / ব্যাংকে জমা", short: "টাকা হস্তান্তর", icon: ArrowRightLeft },
   { href: "/admin/members", label: "সদস্য ব্যবস্থাপনা", icon: UserCog },
   { href: "/admin/invite", label: "লগইন তথ্য WhatsApp-এ পাঠান", short: "লগইন তথ্য পাঠান", icon: Send },
   { href: "/admin/transactions/new", label: "আয়/ব্যয়/বিনিয়োগ যোগ করুন", short: "আয়-ব্যয় যোগ", icon: ClipboardList },
