@@ -4,7 +4,7 @@ import type { DB } from "@/lib/db"
 import { holderBalances } from "@/lib/holdings"
 import { createMember } from "@/lib/services/members"
 import { createHandover, voidHandover } from "@/lib/services/handovers"
-import { closeMonth, closedMonths, reopenMonth, setTask } from "@/lib/services/month-close"
+import { closeMonth, closedMonths, reopenMonth } from "@/lib/services/month-close"
 import { recordPayments } from "@/lib/services/payments"
 import { voidPayment } from "@/lib/services/void"
 import { UserError } from "@/lib/services/errors"
@@ -70,11 +70,8 @@ describe("month close", () => {
     await voidPayment(db, adminId, p.id, "ভুল সদস্য")
   })
 
-  it("cannot close a future month; ticks can be set and undone", async () => {
+  it("cannot close a future month", async () => {
     await expect(closeMonth(db, adminId, "2027-09-01")).rejects.toBeInstanceOf(UserError)
-    await setTask(db, adminId, "2026-11-01", "reminders", true)
-    await setTask(db, adminId, "2026-11-01", "reminders", true)
-    await setTask(db, adminId, "2026-11-01", "reminders", false)
   })
 })
 

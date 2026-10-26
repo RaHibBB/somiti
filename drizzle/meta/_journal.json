@@ -120,6 +120,13 @@
       "when": 1792990531154,
       "tag": "0016_month_close_and_handovers",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792995313496,
+      "tag": "0017_drop_month_tasks",
+      "breakpoints": true
     }
   ]
 }

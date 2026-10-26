@@ -1,14 +1,11 @@
-import { and, asc, eq } from "drizzle-orm"
+import { asc } from "drizzle-orm"
 import type { DB, Tx } from "@/lib/db"
-import { monthCloseEvents, monthTasks } from "@/lib/db/schema"
+import { monthCloseEvents } from "@/lib/db/schema"
 import { loadSnapshot } from "@/lib/data"
 import { writeAudit } from "@/lib/audit"
 import { monthLabel, todayDhaka } from "@/lib/format"
 import { monthOf } from "@/lib/ledger"
 import { UserError } from "./errors"
-
-export const TASK_KEYS = ["notice", "reminders", "handover", "group_message", "report"] as const
-export type TaskKey = (typeof TASK_KEYS)[number]
 
 export type CloseSnapshot = {
   expected: number
@@ -75,10 +72,4 @@ export async function reopenMonth(db: DB, actorId: number, month: string, reason
     await tx.insert(monthCloseEvents).values({ month, kind: "reopen", reason: r, byId: actorId })
     await writeAudit(tx, { actorId, action: "month_reopen", table: "month_close_events", rowId: month, after: { reason: r } })
   })
-}
-
-export async function setTask(db: DB, actorId: number, month: string, key: TaskKey, done: boolean): Promise<void> {
-  if (!TASK_KEYS.includes(key)) throw new UserError("কাজটি সঠিক নয়।")
-  if (done) await db.insert(monthTasks).values({ month, key, doneBy: actorId }).onConflictDoNothing()
-  else await db.delete(monthTasks).where(and(eq(monthTasks.month, month), eq(monthTasks.key, key)))
 }

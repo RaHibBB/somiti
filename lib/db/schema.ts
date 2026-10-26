@@ -280,21 +280,6 @@ export const monthCloseEvents = pgTable(
   ],
 )
 
-// The monthly checklist's manual ticks (reminders sent, group message sent, …). Not financial: a tick can be undone.
-export const monthTasks = pgTable(
-  "month_tasks",
-  {
-    id: serial("id").primaryKey(),
-    month: date("month", { mode: "string" }).notNull(),
-    key: text("key").notNull(),
-    doneBy: integer("done_by")
-      .notNull()
-      .references(() => members.id),
-    createdAt: createdAt(),
-  },
-  (t) => [unique("month_tasks_month_key").on(t.month, t.key)],
-)
-
 // ── Money handed over: admin → bank, or admin → another admin ─────────────────
 // Together with payments.received_by this gives "how much does each admin still hold".
 export const cashHandovers = pgTable(

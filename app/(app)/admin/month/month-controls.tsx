@@ -2,43 +2,11 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Check, Circle, Loader2, Lock, LockOpen } from "lucide-react"
+import { Loader2, Lock, LockOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { FormError } from "@/components/forms/form-bits"
-import { cn } from "@/lib/utils"
-import { closeMonthAction, reopenMonthAction, toggleTaskAction } from "./actions"
-
-/** A big tick box for a step the website can't detect by itself ("I sent the reminders"). */
-export function TickButton({ month, taskKey, done }: { month: string; taskKey: string; done: boolean }) {
-  const router = useRouter()
-  const [pending, start] = useTransition()
-  const [error, setError] = useState<string>()
-  return (
-    <div>
-      <button
-        type="button"
-        disabled={pending}
-        onClick={() =>
-          start(async () => {
-            const res = await toggleTaskAction({ month, key: taskKey, done: !done })
-            if (!res.ok) return setError(res.error)
-            setError(undefined)
-            router.refresh()
-          })
-        }
-        className={cn(
-          "flex h-11 items-center gap-2 rounded-lg border-2 px-3 text-base font-medium",
-          done ? "border-green-600 bg-green-50 text-green-800" : "border-brand-navy bg-white text-brand-navy",
-        )}
-      >
-        {pending ? <Loader2 className="size-5 animate-spin" /> : done ? <Check className="size-5" /> : <Circle className="size-5" />}
-        {done ? "করা হয়েছে (বাতিল করতে চাপুন)" : "করা হয়ে গেছে — টিক দিন"}
-      </button>
-      <FormError message={error} />
-    </div>
-  )
-}
+import { closeMonthAction, reopenMonthAction } from "./actions"
 
 export function CloseControls({ month, closed, label }: { month: string; closed: boolean; label: string }) {
   const router = useRouter()
