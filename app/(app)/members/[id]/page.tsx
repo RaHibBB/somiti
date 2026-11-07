@@ -8,6 +8,8 @@ import { appUrl } from "@/lib/app-url"
 import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot } from "@/lib/data"
+import { getDb } from "@/lib/db"
+import { paymentPeople } from "@/lib/payment-people"
 import { toBn } from "@/lib/format"
 import { monthOf, overdueMonths } from "@/lib/ledger"
 import { accountSummaryMessage, reminderMessage, SAMITI_NAME, upcomingReminderMessage } from "@/lib/whatsapp"
@@ -20,6 +22,8 @@ export default async function MemberAccountPage({ params }: PageProps<"/members/
   const entry = snap.members.find((m) => m.member.id === id)
   if (!entry) notFound()
   const m = entry.member
+  const names = new Map(snap.members.map((x) => [x.member.id, x.member.nameBn]))
+  const people = adminUi ? await paymentPeople(getDb(), entry.payments, (id) => names.get(id) ?? "অজানা") : undefined
 
   // WhatsApp templates (admins only — they're the ones who see phone numbers).
   let templates: WaTemplate[] = []
@@ -89,7 +93,7 @@ export default async function MemberAccountPage({ params }: PageProps<"/members/
         </details>
       ) : null}
 
-      <MemberStatement entry={entry} sharePrice={snap.settings.sharePrice} canVoid={adminUi} />
+      <MemberStatement entry={entry} sharePrice={snap.settings.sharePrice} canVoid={adminUi} people={people} />
     </>
   )
 }

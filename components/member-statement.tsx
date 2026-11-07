@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { FileDown } from "lucide-react"
 import type { MemberLedger } from "@/lib/data"
+import type { PaymentPeople } from "@/lib/payment-people"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { MonthStatus } from "@/lib/ledger"
@@ -43,12 +44,15 @@ export function MemberStatement({
   sharePrice,
   showUpcoming = 3,
   canVoid = false,
+  people,
 }: {
   entry: MemberLedger
   sharePrice: number
   showUpcoming?: number
   /** Admins get a "বাতিল" button on each valid payment (a wrong entry is voided, never deleted). */
   canVoid?: boolean
+  /** Admins only: who received, entered and (if voided) voided each payment, by payment id. */
+  people?: Record<number, PaymentPeople>
 }) {
   const { member, lines } = entry
   // Months already due, plus the next few upcoming ones.
@@ -112,7 +116,21 @@ export function MemberStatement({
                     {monthLabel(p.forMonth)} · {formatDate(p.paidOn)} · {METHOD_LABELS[p.method]}
                     {p.trxId ? ` · ${p.trxId}` : ""}
                   </p>
-                  {isVoid ? <p className="text-sm font-medium text-destructive">বাতিল — {p.voidReason}</p> : null}
+                  {people?.[p.id] ? (
+                    <p className="text-sm text-muted-foreground">
+                      {[
+                        people[p.id].received ? `টাকা নিয়েছেন: ${people[p.id].received}` : "টাকা কার কাছে: লেখা নেই",
+                        people[p.id].entered ? `লিখেছেন: ${people[p.id].entered}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                  {isVoid ? (
+                    <p className="text-sm font-medium text-destructive">
+                      বাতিল{people?.[p.id]?.voided ? ` (${people[p.id].voided})` : ""} — {p.voidReason}
+                    </p>
+                  ) : null}
                   <Link href={`/print/receipt/${p.receiptNo}`} className="mt-1 inline-flex items-center gap-1 text-sm text-brand-navy underline">
                     <FileDown className="size-4" /> রসিদ PDF
                   </Link>
