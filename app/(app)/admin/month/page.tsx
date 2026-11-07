@@ -7,7 +7,7 @@ import { getSnapshot } from "@/lib/data"
 import { getDb } from "@/lib/db"
 import { cashHandovers, monthCloseEvents } from "@/lib/db/schema"
 import { formatDateTime, monthLabel, taka, toBn } from "@/lib/format"
-import { holderBalances } from "@/lib/holdings"
+import { monthHoldings } from "@/lib/holdings"
 import { addMonths, monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 import { CloseControls } from "./month-controls"
@@ -32,7 +32,7 @@ function Step({ n, done, title, children }: { n: number; done: boolean; title: s
 
 const linkBtn = "flex h-11 items-center justify-between rounded-lg border bg-white px-3 text-base active:bg-muted"
 
-/** Three steps: collect, remind, close. Closing is optional — it just locks the month once everything is final. */
+/** Four steps: collect, remind, bank, close. Closing is optional — it just locks the month once everything is final. */
 export default async function MonthPage({ searchParams }: PageProps<"/admin/month">) {
   await requireAdmin()
   const db = getDb()
@@ -59,11 +59,12 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
   const overdueCount = active.filter((m) => m.due > 0).length
   const allPaid = expected > 0 && unpaidCount === 0
 
-  const { holders } = holderBalances(
+  const hold = monthHoldings(
     snap.members.flatMap((m) => m.payments),
     handovers,
+    month,
   )
-  const holdingNow = holders.filter((h) => h.balance !== 0)
+  const holdingNow = hold.holders.filter((h) => h.closing !== 0)
 
   const months: string[] = []
   for (let m = current; m >= first && months.length < 12; m = addMonths(m, -1)) months.push(m)
@@ -116,20 +117,27 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
           </Link>
         </Step>
 
-        <Step n={3} done={closed} title="সব ঠিক থাকলে মাস বন্ধ করুন (ঐচ্ছিক)">
+        <Step n={3} done={hold.collected > 0 && hold.inHand === 0} title="টাকা ব্যাংকে জমা দিন">
+          <p className="text-sm text-muted-foreground">
+            এ মাসে আদায় {taka(hold.collected)} · ব্যাংকে {taka(hold.toBank)} · হাতে {taka(hold.inHand)}
+          </p>
           {holdingNow.length > 0 ? (
             <ul className="divide-y rounded-lg border bg-white text-sm">
               {holdingNow.map((h) => (
                 <li key={h.id} className="flex items-center justify-between px-3 py-2">
                   <span>{names.get(h.id) ?? "অজানা"}-এর হাতে</span>
-                  <b>{taka(h.balance)}</b>
+                  <b>{taka(h.closing)}</b>
                 </li>
               ))}
             </ul>
           ) : null}
-          <Link href="/admin/holdings" className={linkBtn}>
-            কার কাছে কত টাকা — মিলিয়ে দেখুন <ChevronRight className="size-5" />
+          <Link href={`/admin/holdings?month=${month.slice(0, 7)}`} className={linkBtn}>
+            কার কাছে কত টাকা — ব্যাংকে জমা লিখুন <ChevronRight className="size-5" />
           </Link>
+        </Step>
+
+        <Step n={4} done={closed} title="সব ঠিক থাকলে মাস বন্ধ করুন (ঐচ্ছিক)">
+          {!closed && hold.inHand > 0 ? <p className="text-sm text-amber-800">এখনো {taka(hold.inHand)} কারো হাতে আছে — চাইলে তবুও বন্ধ করা যায়, টাকাটা পরের মাসে "আগের মাস থেকে" হিসেবে থাকবে।</p> : null}
           <CloseControls month={month} closed={closed} label={label} />
         </Step>
       </ol>

@@ -79,10 +79,10 @@ describe("handovers", () => {
   it("bank deposits and admin-to-admin handovers move the balance; a void restores it", async () => {
     const h1 = await createHandover(db, adminId, { fromId: adminId, toId: null, amount: 300, date: "2026-11-07", note: "ব্যাংকে" })
     await createHandover(db, adminId, { fromId: adminId, toId: otherAdminId, amount: 100, date: "2026-11-08", note: null })
-    const pays = [{ receivedBy: adminId, amount: 1000, status: "valid" as const }]
+    const pays = [{ receivedBy: adminId, amount: 1000, status: "valid" as const, paidOn: "2026-11-05" }]
     const handovers = [
-      { fromId: adminId, toId: null, amount: 300, status: "valid" as const },
-      { fromId: adminId, toId: otherAdminId, amount: 100, status: "valid" as const },
+      { fromId: adminId, toId: null, amount: 300, status: "valid" as const, date: "2026-11-07" },
+      { fromId: adminId, toId: otherAdminId, amount: 100, status: "valid" as const, date: "2026-11-08" },
     ]
     const res = holderBalances(pays, handovers)
     expect(res.bankTotal).toBe(300)

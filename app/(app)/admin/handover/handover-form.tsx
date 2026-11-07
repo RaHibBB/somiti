@@ -14,11 +14,11 @@ import { createHandoverAction } from "./actions"
 type Admin = { id: number; name: string; balance: number }
 
 /** "I gave ৳X to the bank / to another admin" — keeps each admin's balance honest. */
-export function HandoverForm({ admins, meId, today }: { admins: Admin[]; meId: number; today: string }) {
+export function HandoverForm({ admins, meId, today, initialAmount }: { admins: Admin[]; meId: number; today: string; initialAmount?: string }) {
   const router = useRouter()
   const [fromId, setFromId] = useState(meId)
   const [toId, setToId] = useState<number | "bank">("bank")
-  const [amount, setAmount] = useState("")
+  const [amount, setAmount] = useState(initialAmount ?? "")
   const [date, setDate] = useState(today)
   const [note, setNote] = useState("")
   const [error, setError] = useState<string>()

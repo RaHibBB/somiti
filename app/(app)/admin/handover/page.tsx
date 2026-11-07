@@ -12,8 +12,11 @@ import { HandoverForm } from "./handover-form"
 
 export const metadata = { title: "টাকা হস্তান্তর — সমিতি" }
 
-export default async function HandoverPage() {
+export default async function HandoverPage({ searchParams }: PageProps<"/admin/handover">) {
   const me = await requireAdmin()
+  const q = await searchParams
+  const preFrom = typeof q.from === "string" ? Number(q.from) : undefined
+  const preAmount = typeof q.amount === "string" && /^\d+$/.test(q.amount) ? q.amount : undefined
   const snap = await getSnapshot()
   const all = await getDb().select().from(cashHandovers).orderBy(desc(cashHandovers.id))
   const names = new Map(snap.members.map((m) => [m.member.id, m.member.nameBn]))
@@ -28,7 +31,7 @@ export default async function HandoverPage() {
 
   return (
     <div className="space-y-4">
-      <PageTitle>টাকা হস্তান্তর</PageTitle>
+      <PageTitle>ব্যাংকে জমা / হস্তান্তর</PageTitle>
       <p className="text-base text-muted-foreground">
         কোনো অ্যাডমিন ব্যাংকে টাকা জমা দিলে বা অন্য অ্যাডমিনকে টাকা দিলে এখানে লিখুন। তাহলে &quot;কার হাতে কত টাকা আছে&quot; সবসময় ঠিক থাকবে।
       </p>
@@ -46,7 +49,7 @@ export default async function HandoverPage() {
         <p className="mt-1 text-sm text-muted-foreground">ব্যাংকে জমা হয়েছে মোট {taka(bankTotal)}</p>
       </div>
 
-      <HandoverForm admins={admins} meId={me.id} today={snap.today} />
+      <HandoverForm admins={admins} meId={admins.some((a) => a.id === preFrom) ? (preFrom as number) : me.id} today={snap.today} initialAmount={preAmount} />
 
       <section className="space-y-2">
         <h2 className="text-lg font-semibold text-brand-navy">সব হস্তান্তর ({toBn(all.length)})</h2>
