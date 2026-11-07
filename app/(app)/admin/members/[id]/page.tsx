@@ -4,7 +4,7 @@ import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
 import { formatDate, formatDateTime, monthLabel, taka, toBn } from "@/lib/format"
-import { addMonths, monthOf } from "@/lib/ledger"
+import { addMonths, allMonths, monthOf } from "@/lib/ledger"
 import { CancelMemberForm, EditMemberForm, ResetPinForm, SharesForm } from "../member-forms"
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -90,7 +90,14 @@ export default async function AdminMemberPage({ params }: PageProps<"/admin/memb
             </li>
           ))}
         </ul>
-        <SharesForm id={m.id} current={entry.sharesNow} defaultMonth={addMonths(monthOf(snap.today), 1)} />
+        <SharesForm
+          id={m.id}
+          current={entry.sharesNow}
+          sharePrice={snap.settings.sharePrice}
+          months={allMonths(snap.settings, snap.today).filter((x) => x <= addMonths(monthOf(snap.today), 1))}
+          currentMonth={monthOf(snap.today)}
+          paidByMonth={Object.fromEntries(entry.lines.map((l) => [l.month, l.paid]))}
+        />
       </Section>
 
       {m.status === "active" ? (

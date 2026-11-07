@@ -1,12 +1,12 @@
 import bcrypt from "bcryptjs"
 import { and, eq, max, ne, sql } from "drizzle-orm"
 import type { DB, Tx } from "@/lib/db"
-import { members, shareHistory, type Member } from "@/lib/db/schema"
+import { members, settings, shareHistory, type Member } from "@/lib/db/schema"
 import { writeAudit } from "@/lib/audit"
 import { enqueueSheet } from "@/lib/outbox"
 import { generatePin } from "@/lib/auth/pin"
-import { monthOf } from "@/lib/ledger"
-import { todayDhaka } from "@/lib/format"
+import { addMonths, monthOf } from "@/lib/ledger"
+import { monthLabel, todayDhaka } from "@/lib/format"
 import { isUniqueViolation, UserError } from "./errors"
 
 /** No real limit on shares; this only catches typos (e.g. 5000 instead of 5). */
@@ -127,8 +127,9 @@ export async function updateMember(db: DB, actorId: number, memberId: number, in
 }
 
 /**
- * New share count from `effectiveMonth`. Past months can't be changed (old dues must stay as they were),
- * except for a member who has no share history yet (e.g. flagged during the sheet import).
+ * New share count from `effectiveMonth` — any month from the samiti's start month up to next month.
+ * Going back is allowed on purpose: members often agree to an extra share "from last month" and
+ * then pay the difference, so the ledger simply shows the extra as due for those months.
  */
 export async function changeShares(
   db: DB,
@@ -143,10 +144,9 @@ export async function changeShares(
   return db.transaction(async (tx) => {
     const [m] = await tx.select({ id: members.id }).from(members).where(eq(members.id, memberId))
     if (!m) throw new UserError("সদস্য পাওয়া যায়নি।")
-    if (effectiveMonth < monthOf(today)) {
-      const [prior] = await tx.select({ id: shareHistory.id }).from(shareHistory).where(eq(shareHistory.memberId, memberId)).limit(1)
-      if (prior) throw new UserError("আগের মাসের শেয়ার বদলানো যায় না (পুরনো হিসাব বদলে যাবে)। এই মাস বা পরের কোনো মাস বাছুন।")
-    }
+    const [s] = await tx.select({ startMonth: settings.startMonth }).from(settings).limit(1)
+    if (effectiveMonth < s.startMonth) throw new UserError(`সমিতি শুরু হয়েছে ${monthLabel(s.startMonth)}-এ; তার আগের মাস বাছা যাবে না।`)
+    if (effectiveMonth > addMonths(monthOf(today), 1)) throw new UserError("পরের মাসের চেয়ে বেশি আগে থেকে শেয়ার ঠিক করা যায় না।")
     const [row] = await tx.insert(shareHistory).values({ memberId, shares, effectiveMonth, setBy: actorId }).returning()
     await writeAudit(tx, { actorId, action: "shares_set", table: "share_history", rowId: row.id, after: row })
     await enqueueSheet(tx, "member", memberId)

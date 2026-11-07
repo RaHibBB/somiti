@@ -198,9 +198,12 @@ describe("data-entry guards", () => {
     await expect(pay("2029-09-01", "2027-05-01")).resolves.toHaveLength(1) // advance for the last term month is fine
   })
 
-  it("never rewrites past months' shares, except for a member with no share history", async () => {
-    await expect(changeShares(db, adminId, memberId, 2, "2027-01-01")).rejects.toThrow("আগের মাসের")
-    await expect(changeShares(db, adminId, memberId, 2, "2027-06-01")).resolves.toBeTruthy()
+  it("shares can be changed from any month between the start month and next month", async () => {
+    await expect(changeShares(db, adminId, memberId, 2, "2026-09-01")).rejects.toThrow("শুরু হয়েছে")
+    await expect(changeShares(db, adminId, memberId, 2, "2027-08-01")).rejects.toThrow("পরের মাসের")
+    // Back-dated: the extra share simply becomes due for those months.
+    await expect(changeShares(db, adminId, memberId, 2, "2027-01-01")).resolves.toBeTruthy()
+    await expect(changeShares(db, adminId, memberId, 3, "2027-06-01")).resolves.toBeTruthy()
     const [blank] = await db.insert(members).values({ memberNo: 31, nameBn: "ফ্ল্যাগড", joinedOn: "2026-10-01" }).returning()
     await expect(changeShares(db, adminId, blank.id, 5, "2026-10-01")).resolves.toBeTruthy()
   })

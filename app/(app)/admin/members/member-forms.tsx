@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FormError, SubmitButton } from "@/components/forms/form-bits"
 import { NativeSelect } from "@/components/forms/native-select"
-import { fromBn, taka, toBn } from "@/lib/format"
+import { fromBn, monthLabel, taka, toBn } from "@/lib/format"
 import { inviteMessage, waLink } from "@/lib/whatsapp"
 import { cancelMemberAction, changeSharesAction, createMemberAction, resetPinAction, updateMemberAction } from "./actions"
 
@@ -154,20 +154,82 @@ export function EditMemberForm({ defaults }: { defaults: MemberDefaults }) {
   )
 }
 
-export function SharesForm({ id, current, defaultMonth }: { id: number; current: number; defaultMonth: string }) {
+export type SharesFormProps = {
+  id: number
+  current: number
+  sharePrice: number
+  /** Months the change may start from: start month … next month (oldest first). */
+  months: string[]
+  currentMonth: string
+  /** How much of each month is already paid, for the "left to collect" preview. */
+  paidByMonth: Record<string, number>
+}
+
+/**
+ * Change a member's shares from a chosen month. Picking a past month is the normal case
+ * ("from last month, 2 shares"): the form shows how much extra that makes due up to this
+ * month, and after saving offers to take that money right away.
+ */
+export function SharesForm({ id, current, sharePrice, months, currentMonth, paidByMonth }: SharesFormProps) {
   const [state, action] = useActionState(changeSharesAction, undefined)
+  const [shares, setShares] = useState(String(current || 1))
+  const [from, setFrom] = useState(currentMonth)
+  const n = Number(fromBn(shares))
+  const valid = Number.isInteger(n) && n > 0
+
+  // What the member still owes from the chosen month up to this month at the new share count.
+  // Computed from payments only, so it stays right after the save re-renders the page.
+  let extra = 0
+  if (valid) {
+    for (const m of months) {
+      if (m < from || m > currentMonth) continue
+      extra += Math.max(0, n * sharePrice - (paidByMonth[m] ?? 0))
+    }
+  }
+
+  if (state?.ok) {
+    return (
+      <div className="space-y-3">
+        <p className="rounded-lg bg-green-50 px-3 py-2 text-base text-green-800">
+          ✓ {monthLabel(from)} থেকে {toBn(n)} শেয়ার — মাসে {taka(n * sharePrice)}
+        </p>
+        {extra > 0 ? (
+          <Link href={`/admin/pay?member=${id}`} className="flex h-12 items-center justify-center rounded-lg bg-primary text-base font-semibold text-white">
+            এখন {taka(extra)} জমা নিন →
+          </Link>
+        ) : null}
+      </div>
+    )
+  }
+
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={id} />
       <div className="grid grid-cols-2 gap-3">
-        <SharesInput defaultValue={current || 1} label="নতুন শেয়ার সংখ্যা" />
+        <Field label="নতুন শেয়ার সংখ্যা" htmlFor="shares" hint={valid ? `মাসে ${taka(n * sharePrice)}` : "কমপক্ষে ১"}>
+          <Input id="shares" name="shares" inputMode="numeric" required value={shares} onChange={(e) => setShares(e.target.value)} />
+        </Field>
         <Field label="কোন মাস থেকে" htmlFor="effectiveMonth">
-          <Input id="effectiveMonth" name="effectiveMonth" type="month" defaultValue={defaultMonth.slice(0, 7)} required />
+          <NativeSelect id="effectiveMonth" name="effectiveMonth" value={from.slice(0, 7)} onChange={(e) => setFrom(`${e.target.value}-01`)}>
+            {months.map((m) => (
+              <option key={m} value={m.slice(0, 7)}>
+                {monthLabel(m)}
+                {m === currentMonth ? " (এই মাস)" : ""}
+              </option>
+            ))}
+          </NativeSelect>
         </Field>
       </div>
-      <p className="text-sm text-muted-foreground">আগের মাসগুলোর হিসাব বদলাবে না।</p>
+      {valid && n !== current ? (
+        <p className={extra > 0 ? "rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" : "text-sm text-muted-foreground"}>
+          {extra > 0
+            ? `${monthLabel(from)} থেকে এই মাস পর্যন্ত ${taka(extra)} দিতে হবে। সংরক্ষণের পর "জমা নিন" বোতাম আসবে।`
+            : from > currentMonth
+              ? `${monthLabel(from)} থেকে মাসে ${taka(n * sharePrice)} ধরা হবে।`
+              : "এ পর্যন্ত কিছু বাকি থাকবে না।"}
+        </p>
+      ) : null}
       <FormError message={state && !state.ok ? state.error : undefined} />
-      <Saved show={!!state?.ok} />
       <SubmitButton>শেয়ার পরিবর্তন করুন</SubmitButton>
     </form>
   )
