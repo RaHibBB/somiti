@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { ArrowLeftRight, ChevronRight, LogIn, LogOut } from "lucide-react"
-import { ADMIN_NAV, MAIN_NAV, MY_NAV, PERSONAL_HREFS, REPORT_NAV, type NavItem } from "@/components/layout/nav-items"
+import { ADMIN_MORE_NAV, ADMIN_NAV, MAIN_NAV, MY_NAV, PERSONAL_HREFS, REPORT_NAV, type NavItem } from "@/components/layout/nav-items"
 import { PageTitle } from "@/components/layout/page-title"
 import { logoutAction } from "@/lib/auth/actions"
 import { getViewer } from "@/lib/auth/session"
@@ -67,6 +67,12 @@ export default async function MorePage() {
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-muted-foreground">অ্যাডমিন</h2>
           <LinkList items={ADMIN_LINKS} />
+          <details className="rounded-xl border bg-white">
+            <summary className="min-h-14 cursor-pointer px-4 py-4 text-base text-muted-foreground">আরও অ্যাডমিন কাজ (কম লাগে)</summary>
+            <div className="border-t">
+              <LinkList items={ADMIN_MORE_NAV} />
+            </div>
+          </details>
         </section>
       ) : null}
       {me ? (

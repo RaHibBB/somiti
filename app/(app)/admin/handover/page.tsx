@@ -1,7 +1,7 @@
 import { desc } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
-import { getSnapshot } from "@/lib/data"
+import { getSnapshot, loadTransactions } from "@/lib/data"
 import { getDb } from "@/lib/db"
 import { cashHandovers } from "@/lib/db/schema"
 import { formatDate, taka, toBn } from "@/lib/format"
@@ -18,11 +18,12 @@ export default async function HandoverPage({ searchParams }: PageProps<"/admin/h
   const preFrom = typeof q.from === "string" ? Number(q.from) : undefined
   const preAmount = typeof q.amount === "string" && /^\d+$/.test(q.amount) ? q.amount : undefined
   const snap = await getSnapshot()
-  const all = await getDb().select().from(cashHandovers).orderBy(desc(cashHandovers.id))
+  const [all, txns] = await Promise.all([getDb().select().from(cashHandovers).orderBy(desc(cashHandovers.id)), loadTransactions()])
   const names = new Map(snap.members.map((m) => [m.member.id, m.member.nameBn]))
   const { holders, bankTotal } = holderBalances(
     snap.members.flatMap((m) => m.payments),
     all,
+    txns,
   )
   const balanceOf = (id: number) => holders.find((h) => h.id === id)?.balance ?? 0
   const admins = snap.members

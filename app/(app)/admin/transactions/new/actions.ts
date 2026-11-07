@@ -25,6 +25,12 @@ const schema = z.object({
     .optional()
     .transform((s) => (s ? Number(s) : null))
     .pipe(z.number().int().positive().nullable()),
+  via: z.enum(["bank", "cash"]).default("bank"),
+  cashHolderId: z
+    .string()
+    .optional()
+    .transform((s) => (s ? Number(s) : null))
+    .pipe(z.number().int().positive().nullable()),
   acceptRuleBreak: z
     .string()
     .optional()

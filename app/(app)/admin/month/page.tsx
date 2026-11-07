@@ -3,7 +3,7 @@ import { asc, desc, eq } from "drizzle-orm"
 import { Check, ChevronRight } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
-import { getSnapshot } from "@/lib/data"
+import { getSnapshot, loadTransactions } from "@/lib/data"
 import { getDb } from "@/lib/db"
 import { cashHandovers, monthCloseEvents } from "@/lib/db/schema"
 import { formatDateTime, monthLabel, taka, toBn } from "@/lib/format"
@@ -43,9 +43,10 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
   const month = typeof raw === "string" && /^\d{4}-\d{2}$/.test(raw) && `${raw}-01` >= first && `${raw}-01` <= current ? `${raw}-01` : current
   const label = monthLabel(month)
 
-  const [events, handovers] = await Promise.all([
+  const [events, handovers, txns] = await Promise.all([
     db.select().from(monthCloseEvents).where(eq(monthCloseEvents.month, month)).orderBy(desc(monthCloseEvents.id)),
     db.select().from(cashHandovers).orderBy(asc(cashHandovers.id)),
+    loadTransactions(db),
   ])
   const latest = events[0]
   const closed = latest?.kind === "close"
@@ -63,6 +64,7 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
     snap.members.flatMap((m) => m.payments),
     handovers,
     month,
+    txns,
   )
   const holdingNow = hold.holders.filter((h) => h.closing !== 0)
 

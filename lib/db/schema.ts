@@ -33,6 +33,8 @@ export const txnTypeEnum = pgEnum("txn_type", [
   "member_refund",
   "dividend",
 ])
+// Where a transaction's money came from / went to: the samiti's bank account, or cash an admin holds.
+export const txnViaEnum = pgEnum("txn_via", ["bank", "cash"])
 export const noticeStatusEnum = pgEnum("notice_status", ["active", "archived"])
 export const outboxStatusEnum = pgEnum("outbox_status", ["pending", "done", "failed"])
 export const reportStatusEnum = pgEnum("report_status", ["pending", "approved", "rejected"])
@@ -177,6 +179,9 @@ export const transactions = pgTable(
     voteResult: text("vote_result"),
     // Set when an investment is made under a passed proposal (Phase 2).
     proposalId: integer("proposal_id").references(() => proposals.id),
+    // Paid from / received into the bank (default) or an admin's cash in hand (then cash_holder_id says whose).
+    via: txnViaEnum("via").notNull().default("bank"),
+    cashHolderId: integer("cash_holder_id").references(() => members.id),
     status: recordStatusEnum("status").notNull().default("valid"),
     voidReason: text("void_reason"),
     voidedBy: integer("voided_by").references(() => members.id),
@@ -185,6 +190,7 @@ export const transactions = pgTable(
   },
   (t) => [
     check("transactions_amount_positive", sql`${t.amount} > 0`),
+    check("transactions_cash_has_holder", sql`${t.via} = 'bank' OR ${t.cashHolderId} IS NOT NULL`),
     check(
       "transactions_void_has_reason",
       sql`${t.status} = 'valid' OR (${t.voidReason} IS NOT NULL AND length(trim(${t.voidReason})) > 0 AND ${t.voidedAt} IS NOT NULL)`,

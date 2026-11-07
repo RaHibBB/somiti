@@ -10,7 +10,10 @@ import { NativeSelect } from "@/components/forms/native-select"
 import { InvestmentImpact, parseAmount } from "@/components/investment-impact"
 import { taka, toBn, TXN_TYPE_LABELS } from "@/lib/format"
 import { compressImage } from "@/lib/image-compress"
+import { cn } from "@/lib/utils"
 import { createTransactionAction } from "./actions"
+
+const INFLOW_TYPES = new Set(["business_income", "investment_return", "bank_profit"])
 
 export type PassedProposal = { id: number; title: string; amount: number | null }
 
@@ -18,14 +21,19 @@ export function TransactionForm({
   today,
   fund,
   proposals,
+  admins,
+  meId,
 }: {
   today: string
   fund: { cash: number; invested: number; minCashPct: number }
   proposals: PassedProposal[]
+  admins: { id: number; name: string }[]
+  meId: number
 }) {
   const [state, formAction] = useActionState(createTransactionAction, undefined)
   const [type, setType] = useState("expense")
   const [amount, setAmount] = useState("")
+  const [via, setVia] = useState<"bank" | "cash">("bank")
   const isInvestment = type === "investment"
   const photo = useRef<File | null>(null)
   const [preview, setPreview] = useState<{ url: string; kb: number } | null>(null)
@@ -123,6 +131,29 @@ export function TransactionForm({
           </label>
         </div>
       ) : null}
+      <div className="space-y-2">
+        <p className="text-base font-medium">টাকা {INFLOW_TYPES.has(type) ? "কোথায় গেল?" : "কোথা থেকে গেল?"}</p>
+        <div className="grid grid-cols-2 gap-2">
+          {(["bank", "cash"] as const).map((v) => (
+            <label key={v} className={cn("flex h-12 cursor-pointer items-center justify-center rounded-xl border-2 text-base", via === v ? "border-brand-navy bg-brand-navy font-semibold text-white" : "bg-white")}>
+              <input type="radio" name="via" value={v} checked={via === v} onChange={() => setVia(v)} className="sr-only" />
+              {v === "bank" ? "ব্যাংক" : "হাতের নগদ"}
+            </label>
+          ))}
+        </div>
+        {via === "cash" ? (
+          <Field label="কার হাতের নগদ?" htmlFor="cashHolderId" hint="এই অ্যাডমিনের হাতের হিসাব থেকে টাকাটা কমবে/বাড়বে।">
+            <NativeSelect id="cashHolderId" name="cashHolderId" defaultValue={meId}>
+              {admins.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                  {a.id === meId ? " (আমি)" : ""}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+        ) : null}
+      </div>
       <Field label="বিবরণ" htmlFor="description">
         <Textarea id="description" name="description" rows={2} required placeholder="কী বাবদ, কাকে দেওয়া হয়েছে" />
       </Field>

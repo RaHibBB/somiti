@@ -70,10 +70,14 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/dues", label: "বকেয়া ও বাকি", icon: ShieldAlert },
   { href: "/admin/holdings", label: "কার কাছে কত টাকা", icon: Wallet },
   { href: "/admin/members", label: "সদস্য ব্যবস্থাপনা", icon: UserCog },
-  { href: "/admin/invite", label: "লগইন তথ্য WhatsApp-এ পাঠান", short: "লগইন তথ্য পাঠান", icon: Send },
   { href: "/admin/transactions/new", label: "আয়/ব্যয়/বিনিয়োগ যোগ করুন", short: "আয়-ব্যয় যোগ", icon: ClipboardList },
-  { href: "/admin/proposals/new", label: "নতুন প্রস্তাব (ভোট)", short: "নতুন প্রস্তাব", icon: FilePlus },
   { href: "/admin/notices", label: "নোটিশ লিখুন", icon: Megaphone },
+]
+
+/** Admin work that comes up rarely — kept behind "আরও" so the main menu stays short. */
+export const ADMIN_MORE_NAV: NavItem[] = [
+  { href: "/admin/invite", label: "লগইন তথ্য WhatsApp-এ পাঠান", short: "লগইন তথ্য পাঠান", icon: Send },
+  { href: "/admin/proposals/new", label: "নতুন প্রস্তাব (ভোট)", short: "নতুন প্রস্তাব", icon: FilePlus },
   { href: "/admin/void", label: "ভুল এন্ট্রি বাতিল", short: "ভুল এন্ট্রি বাতিল", icon: Ban },
   { href: "/admin/audit", label: "অডিট লগ", icon: FileClock },
   { href: "/admin/export", label: "CSV ডাউনলোড", icon: Download },

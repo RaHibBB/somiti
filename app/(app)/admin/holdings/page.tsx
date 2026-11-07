@@ -3,7 +3,7 @@ import { asc } from "drizzle-orm"
 import { Check, Landmark, Pencil } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
-import { getSnapshot } from "@/lib/data"
+import { getSnapshot, loadTransactions } from "@/lib/data"
 import { getDb } from "@/lib/db"
 import { cashHandovers } from "@/lib/db/schema"
 import { monthHoldings } from "@/lib/holdings"
@@ -21,7 +21,7 @@ export const metadata = { title: "কার কাছে কত টাকা —
 export default async function HoldingsPage({ searchParams }: PageProps<"/admin/holdings">) {
   await requireAdmin()
   const snap = await getSnapshot()
-  const handovers = await getDb().select().from(cashHandovers).orderBy(asc(cashHandovers.id))
+  const [handovers, txns] = await Promise.all([getDb().select().from(cashHandovers).orderBy(asc(cashHandovers.id)), loadTransactions()])
   const names = new Map(snap.members.map((m) => [m.member.id, m.member.nameBn]))
   const name = (id: number) => names.get(id) ?? "অজানা"
 
@@ -35,6 +35,7 @@ export default async function HoldingsPage({ searchParams }: PageProps<"/admin/h
     snap.members.flatMap((m) => m.payments),
     handovers,
     month,
+    txns,
   )
   const allInBank = h.collected > 0 && h.inHand === 0 && h.unknownAmount === 0
   const monthHandovers = handovers.filter((t) => t.date.slice(0, 7) === month.slice(0, 7)).reverse()
@@ -78,7 +79,10 @@ export default async function HoldingsPage({ searchParams }: PageProps<"/admin/h
             <Check className="size-5" /> এ মাসের সব টাকা ব্যাংকে জমা হয়েছে
           </p>
         ) : null}
-        <p className="mt-2 text-center text-xs text-muted-foreground">ব্যাংকে মোট জমা (সব মিলিয়ে): {taka(h.bankTotal)}</p>
+        <p className="mt-2 text-center text-sm">
+          ব্যাংকে আছে: <b>{taka(h.bankBalance)}</b>
+          <span className="text-xs text-muted-foreground"> (মোট জমা {taka(h.bankTotal)}, ব্যাংক থেকে খরচ/বিনিয়োগ বাদ দিয়ে)</span>
+        </p>
       </div>
 
       {h.unknownAmount > 0 ? (
@@ -121,6 +125,18 @@ export default async function HoldingsPage({ searchParams }: PageProps<"/admin/h
                 <>
                   <dt>অন্য অ্যাডমিন থেকে পেয়েছেন</dt>
                   <dd className="text-right">{taka(r.receivedIn)}</dd>
+                </>
+              ) : null}
+              {r.spentCash ? (
+                <>
+                  <dt>হাতের নগদ থেকে খরচ</dt>
+                  <dd className="text-right">{taka(r.spentCash)}</dd>
+                </>
+              ) : null}
+              {r.incomeCash ? (
+                <>
+                  <dt>নগদে আয় পেয়েছেন</dt>
+                  <dd className="text-right">{taka(r.incomeCash)}</dd>
                 </>
               ) : null}
             </dl>

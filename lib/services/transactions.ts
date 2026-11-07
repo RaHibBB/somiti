@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { DB } from "@/lib/db"
-import { proposals, transactions, type Transaction } from "@/lib/db/schema"
+import { members, proposals, transactions, type Transaction } from "@/lib/db/schema"
 import { writeAudit } from "@/lib/audit"
 import { enqueueSheet } from "@/lib/outbox"
 import { todayDhaka } from "@/lib/format"
@@ -17,6 +17,9 @@ export type TransactionInput = {
   meetingDate: string | null
   voteResult: string | null
   proposalId?: number | null
+  /** "bank" (default) or "cash" — cash means an admin's own hand, named by cashHolderId. */
+  via?: "bank" | "cash"
+  cashHolderId?: number | null
 }
 
 export async function createTransaction(db: DB, actorId: number, input: TransactionInput, today = todayDhaka()): Promise<Transaction> {
@@ -30,11 +33,17 @@ export async function createTransaction(db: DB, actorId: number, input: Transact
     // Record the vote that authorised it, unless the admin typed something else.
     if (!input.voteResult) input = { ...input, voteResult: `হ্যাঁ ${p.yesCount ?? 0}, না ${p.noCount ?? 0} (প্রস্তাব #${p.id})` }
   }
+  const via = input.via ?? "bank"
+  const cashHolderId = via === "cash" ? (input.cashHolderId ?? actorId) : null
+  if (cashHolderId) {
+    const [h] = await db.select().from(members).where(eq(members.id, cashHolderId))
+    if (!h || h.status !== "active" || h.role !== "admin") throw new UserError("নগদ টাকা যাঁর হাতে, তিনি একজন সক্রিয় অ্যাডমিন হতে হবে।")
+  }
   await assertMonthOpen(db, input.date)
   return db.transaction(async (tx) => {
     const [row] = await tx
       .insert(transactions)
-      .values({ ...input, description: input.description.trim(), createdBy: actorId })
+      .values({ ...input, via, cashHolderId, description: input.description.trim(), createdBy: actorId })
       .returning()
     await writeAudit(tx, { actorId, action: "transaction_create", table: "transactions", rowId: row.id, after: row })
     await enqueueSheet(tx, "transaction", row.id)

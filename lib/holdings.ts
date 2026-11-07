@@ -4,6 +4,10 @@
 
 export type HolderPayment = { receivedBy: number | null; amount: number; status: "valid" | "void"; paidOn: string }
 export type HolderHandover = { fromId: number; toId: number | null; amount: number; status: "valid" | "void"; date: string }
+export type HolderTxn = { type: string; via: "bank" | "cash"; cashHolderId: number | null; amount: number; status: "valid" | "void"; date: string }
+
+const INFLOW = new Set(["business_income", "investment_return", "bank_profit"])
+const isInflow = (t: HolderTxn) => INFLOW.has(t.type)
 
 export type MonthHolding = {
   id: number
@@ -13,7 +17,11 @@ export type MonthHolding = {
   toBank: number
   givenOut: number
   receivedIn: number
-  /** opening + collected − toBank − givenOut + receivedIn */
+  /** Expenses etc. paid from this admin's cash this month. */
+  spentCash: number
+  /** Income received as cash into this admin's hand this month. */
+  incomeCash: number
+  /** opening + collected + receivedIn + incomeCash − toBank − givenOut − spentCash */
   closing: number
 }
 
@@ -24,6 +32,8 @@ export type MonthHoldings = {
   toBank: number
   /** Everything deposited in the bank up to the end of this month. */
   bankTotal: number
+  /** What the bank account holds at the end of this month: deposits + bank income − bank outflows. */
+  bankBalance: number
   /** Still in admins' hands at the end of this month. */
   inHand: number
   /** Payments whose holder is unknown (old entries without a receiver) — shown so they can be fixed. */
@@ -32,13 +42,13 @@ export type MonthHoldings = {
 
 const ym = (d: string) => d.slice(0, 7)
 
-export function monthHoldings(pays: HolderPayment[], handovers: HolderHandover[], month: string): MonthHoldings {
+export function monthHoldings(pays: HolderPayment[], handovers: HolderHandover[], month: string, txns: HolderTxn[] = []): MonthHoldings {
   const m = ym(month)
   const map = new Map<number, MonthHolding>()
   const get = (id: number) => {
     let h = map.get(id)
     if (!h) {
-      h = { id, opening: 0, collected: 0, toBank: 0, givenOut: 0, receivedIn: 0, closing: 0 }
+      h = { id, opening: 0, collected: 0, toBank: 0, givenOut: 0, receivedIn: 0, spentCash: 0, incomeCash: 0, closing: 0 }
       map.set(id, h)
     }
     return h
@@ -71,9 +81,23 @@ export function monthHoldings(pays: HolderPayment[], handovers: HolderHandover[]
       if (t.toId !== null) get(t.toId).opening += t.amount
     }
   }
+  let bankBalance = bankTotal
+  for (const t of txns) {
+    if (t.status !== "valid" || ym(t.date) > m) continue
+    const signed = isInflow(t) ? t.amount : -t.amount
+    if (t.via === "bank" || !t.cashHolderId) {
+      bankBalance += signed
+      continue
+    }
+    const h = get(t.cashHolderId)
+    if (ym(t.date) === m) {
+      if (signed > 0) h.incomeCash += t.amount
+      else h.spentCash += t.amount
+    } else h.opening += signed
+  }
   const holders = [...map.values()]
-    .map((h) => ({ ...h, closing: h.opening + h.collected - h.toBank - h.givenOut + h.receivedIn }))
-    .filter((h) => h.opening || h.collected || h.toBank || h.givenOut || h.receivedIn)
+    .map((h) => ({ ...h, closing: h.opening + h.collected + h.receivedIn + h.incomeCash - h.toBank - h.givenOut - h.spentCash }))
+    .filter((h) => h.opening || h.collected || h.toBank || h.givenOut || h.receivedIn || h.spentCash || h.incomeCash)
     .sort((a, b) => b.closing - a.closing || b.collected - a.collected)
   return {
     month: `${m}-01`,
@@ -81,13 +105,14 @@ export function monthHoldings(pays: HolderPayment[], handovers: HolderHandover[]
     collected: holders.reduce((s, h) => s + h.collected, 0),
     toBank: holders.reduce((s, h) => s + h.toBank, 0),
     bankTotal,
+    bankBalance,
     inHand: holders.reduce((s, h) => s + h.closing, 0),
     unknownAmount,
   }
 }
 
 /** Current balances (all months) — what each admin holds right now. */
-export function holderBalances(pays: HolderPayment[], handovers: HolderHandover[]): { holders: { id: number; balance: number }[]; bankTotal: number } {
-  const r = monthHoldings(pays, handovers, "9999-12")
+export function holderBalances(pays: HolderPayment[], handovers: HolderHandover[], txns: HolderTxn[] = []): { holders: { id: number; balance: number }[]; bankTotal: number } {
+  const r = monthHoldings(pays, handovers, "9999-12", txns)
   return { holders: r.holders.map((h) => ({ id: h.id, balance: h.closing })), bankTotal: r.bankTotal }
 }

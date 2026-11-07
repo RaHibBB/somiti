@@ -6,7 +6,7 @@ import { LogIn, LogOut } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { logoutAction } from "@/lib/auth/actions"
 import { cn } from "@/lib/utils"
-import { ADMIN_NAV, MAIN_NAV, MY_NAV, REPORT_NAV, type NavItem } from "./nav-items"
+import { ADMIN_MORE_NAV, ADMIN_NAV, MAIN_NAV, MY_NAV, REPORT_NAV, type NavItem } from "./nav-items"
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/"
@@ -55,7 +55,15 @@ export function Sidebar({ mode }: { mode: "admin" | "member" | "guest" }) {
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4" aria-label="প্রধান মেনু">
         <Group items={mode === "admin" ? MAIN_NAV.filter((i) => i.href !== "/grid") : MAIN_NAV} pathname={pathname} />
-        {mode === "admin" ? <Group title="অ্যাডমিনের কাজ" items={ADMIN_NAV} pathname={pathname} /> : null}
+        {mode === "admin" ? (
+          <>
+            <Group title="অ্যাডমিনের কাজ" items={ADMIN_NAV} pathname={pathname} />
+            <details open={ADMIN_MORE_NAV.some((i) => isActive(pathname, i.href))} className="mt-1">
+              <summary className="cursor-pointer px-3 py-1 text-xs font-semibold tracking-wide text-muted-foreground">আরও অ্যাডমিন কাজ</summary>
+              <Group items={ADMIN_MORE_NAV} pathname={pathname} />
+            </details>
+          </>
+        ) : null}
         <Group title="রিপোর্ট" items={REPORT_NAV} pathname={pathname} />
         {mode !== "guest" ? <Group title="আমার" items={MY_NAV} pathname={pathname} /> : null}
       </nav>

@@ -58,3 +58,23 @@ describe("monthHoldings", () => {
     expect(h.holders.find((x) => x.id === A)?.opening).toBe(600)
   })
 })
+
+describe("monthHoldings with transactions", () => {
+  it("bank balance follows bank income/outflow; cash expenses reduce the admin's hand", () => {
+    const txns = [
+      { type: "expense", via: "bank" as const, cashHolderId: null, amount: 200, status: "valid" as const, date: "2026-11-15" },
+      { type: "bank_profit", via: "bank" as const, cashHolderId: null, amount: 50, status: "valid" as const, date: "2026-11-20" },
+      { type: "expense", via: "cash" as const, cashHolderId: A, amount: 150, status: "valid" as const, date: "2026-11-16" },
+      { type: "business_income", via: "cash" as const, cashHolderId: A, amount: 70, status: "valid" as const, date: "2026-11-17" },
+      { type: "expense", via: "cash" as const, cashHolderId: A, amount: 999, status: "void" as const, date: "2026-11-16" },
+    ]
+    const h = monthHoldings(pays, handovers, "2026-11-01", txns)
+    const a = h.holders.find((x) => x.id === A)!
+    expect(a.spentCash).toBe(150)
+    expect(a.incomeCash).toBe(70)
+    expect(a.closing).toBe(600 - 150 + 70)
+    expect(h.bankBalance).toBe(2000 - 200 + 50)
+    // Next month carries the cash effect forward in the opening balance.
+    expect(monthHoldings(pays, handovers, "2026-12-01", txns).holders.find((x) => x.id === A)?.opening).toBe(520)
+  })
+})

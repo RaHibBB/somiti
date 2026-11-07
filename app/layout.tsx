@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next"
 import { Noto_Naskh_Arabic, Noto_Sans_Bengali } from "next/font/google"
-import { QuranPlayer } from "@/components/quran-player"
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
@@ -35,7 +34,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="bn" className={`${bengali.variable} ${arabic.variable} h-full antialiased`}>
       <body className="min-h-full bg-muted">
         {children}
-        <QuranPlayer />
         <Toaster position="top-center" richColors />
       </body>
     </html>
