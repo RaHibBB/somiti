@@ -71,3 +71,16 @@ describe("post-login redirect", () => {
     expect(safeNext(undefined)).toBe("/")
   })
 })
+
+describe("session token", () => {
+  it("lasts 400 days and carries its issue time (needed for sliding renewal)", async () => {
+    process.env.SESSION_SECRET = "x".repeat(40)
+    const { signSession, verifySession, SESSION_MAX_AGE } = await import("@/lib/auth/token")
+    expect(SESSION_MAX_AGE).toBe(60 * 60 * 24 * 400)
+    const token = await signSession({ memberId: 7, role: "admin", sv: 3 })
+    const s = await verifySession(token)
+    expect(s).toMatchObject({ memberId: 7, role: "admin", sv: 3 })
+    expect(typeof s?.iat).toBe("number")
+    expect(await verifySession(token + "x")).toBeNull()
+  })
+})

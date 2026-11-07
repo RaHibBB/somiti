@@ -3,16 +3,17 @@
 // Only pages that act as a specific person need a session; every page and server action
 // still re-checks the session and role against the DB.
 import { NextResponse, type NextRequest } from "next/server"
-import { SESSION_COOKIE, verifySession } from "@/lib/auth/token"
+import { RENEW_AFTER, SESSION_COOKIE, SESSION_MAX_AGE, signSession, verifySession } from "@/lib/auth/token"
 
 const NEEDS_LOGIN = ["/admin", "/me", "/report", "/settings"]
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
   const needsLogin = NEEDS_LOGIN.some((p) => pathname === p || pathname.startsWith(p + "/"))
-  if (!needsLogin) return NextResponse.next()
-
   const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value)
+
+  if (!needsLogin) return withRenewedCookie(NextResponse.next(), session)
+
   if (!session) {
     const login = new URL("/login", request.url)
     login.searchParams.set("next", pathname + search)
@@ -21,7 +22,22 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/admin") && session.role !== "admin") {
     return NextResponse.redirect(new URL("/", request.url))
   }
-  return NextResponse.next()
+  return withRenewedCookie(NextResponse.next(), session)
+}
+
+/** Sliding session: a cookie older than a week is re-issued with the same claims, so it never runs out while in use. */
+async function withRenewedCookie(res: NextResponse, session: Awaited<ReturnType<typeof verifySession>>) {
+  if (!session?.iat) return res
+  const ageSeconds = Math.floor(Date.now() / 1000) - session.iat
+  if (ageSeconds < RENEW_AFTER) return res
+  res.cookies.set(SESSION_COOKIE, await signSession(session), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  })
+  return res
 }
 
 export const config = {
