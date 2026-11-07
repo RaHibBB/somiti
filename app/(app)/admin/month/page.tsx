@@ -137,7 +137,7 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
         </Step>
 
         <Step n={4} done={closed} title="সব ঠিক থাকলে মাস বন্ধ করুন (ঐচ্ছিক)">
-          {!closed && hold.inHand > 0 ? <p className="text-sm text-amber-800">এখনো {taka(hold.inHand)} কারো হাতে আছে — চাইলে তবুও বন্ধ করা যায়, টাকাটা পরের মাসে "আগের মাস থেকে" হিসেবে থাকবে।</p> : null}
+          {!closed && hold.inHand > 0 ? <p className="text-sm text-amber-800">এখনো {taka(hold.inHand)} কারো হাতে আছে — চাইলে তবুও বন্ধ করা যায়, টাকাটা পরের মাসে &quot;আগের মাস থেকে&quot; হিসেবে থাকবে।</p> : null}
           <CloseControls month={month} closed={closed} label={label} />
         </Step>
       </ol>
