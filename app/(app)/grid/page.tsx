@@ -1,8 +1,8 @@
 import { PageTitle } from "@/components/layout/page-title"
 import { getViewer } from "@/lib/auth/session"
 import { getSnapshot } from "@/lib/data"
-import { monthLabel, monthShort, taka, toBn } from "@/lib/format"
-import { monthOf, type MonthStatus } from "@/lib/ledger"
+import { monthShort, taka, toBn } from "@/lib/format"
+import { addMonths, monthOf, type MonthStatus } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 import { ScrollToCurrent } from "./scroll-to-current"
 
@@ -18,8 +18,11 @@ const CELL: Record<MonthStatus, { cls: string; mark: string; label: string }> = 
 export default async function GridPage() {
   await getViewer()
   const snap = await getSnapshot()
-  const months = snap.members[0]?.lines.map((l) => l.month) ?? []
   const thisMonth = monthOf(snap.today)
+  // Months up to this one plus two ahead: further future cells are all empty and only
+  // made the page huge (41 members × 36 months was ~1 MB of HTML on the phone).
+  const lastShown = addMonths(thisMonth, 2)
+  const months = (snap.members[0]?.lines.map((l) => l.month) ?? []).filter((m) => m <= lastShown)
   const rows = snap.members.filter((m) => m.member.status === "active" || m.paid > 0)
 
   return (
@@ -33,7 +36,7 @@ export default async function GridPage() {
           </span>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">ডানে-বামে সরিয়ে সব মাস দেখুন। ঘরে চাপ দিলে বিস্তারিত দেখাবে।</p>
+      <p className="text-xs text-muted-foreground">ডানে-বামে সরিয়ে মাসগুলো দেখুন। নামে চাপ দিলে সদস্যের পুরো হিসাব।</p>
 
       <div id="grid-scroll" className="-mx-4 overflow-x-auto border-y bg-white lg:mx-0 lg:rounded-xl lg:border">
         <table className="border-separate border-spacing-0 text-sm">
@@ -63,19 +66,16 @@ export default async function GridPage() {
                   </a>
                   {r.due > 0 ? <span className="block text-xs text-destructive">{taka(r.due)}</span> : null}
                 </th>
-                {r.lines.map((l) => {
-                  const c = CELL[l.status]
-                  return (
-                    <td key={l.month} className="border-b border-white p-0.5">
-                      <div
-                        title={`${r.member.nameBn} — ${monthLabel(l.month)}: ${taka(l.paid)} / ${taka(l.expected)} (${c.label})`}
-                        className={cn("flex h-9 items-center justify-center rounded text-sm", c.cls)}
-                      >
-                        {c.mark}
-                      </div>
-                    </td>
-                  )
-                })}
+                {r.lines
+                  .filter((l) => l.month <= lastShown)
+                  .map((l) => {
+                    const c = CELL[l.status]
+                    return (
+                      <td key={l.month} className="border-b border-white p-0.5">
+                        <div className={cn("flex h-9 items-center justify-center rounded text-sm", c.cls)}>{c.mark}</div>
+                      </td>
+                    )
+                  })}
               </tr>
             ))}
           </tbody>

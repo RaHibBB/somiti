@@ -100,7 +100,7 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - **Failures:** the whole batch is marked `failed` with `last_error` and `attempts + 1`. The `after()` flush only takes `pending` rows, so a broken Sheets API doesn't slow every save. The daily cron retries `pending` and `failed`.
 - **Cron:** `vercel.json` runs `/api/cron/sheet-sync` daily at 21:00 UTC (03:00 Asia/Dhaka). The full rewrite runs when that call happens on a **Sunday in Dhaka**, or when called with `?full=1`. The route requires `Authorization: Bearer $CRON_SECRET` (compared in constant time).
 - Tabs are created automatically if missing, with row 1 = "এই শিট শুধু দেখার জন্য। হিসাব লিখুন ওয়েবসাইটে।", row 2 = Bengali headers, and the top two rows frozen. Making the sheet view-only for humans is a sharing setting in Google Sheets (see README).
-- `googleapis` is imported lazily, only when a sync actually runs, to keep cold starts fast. Without `GOOGLE_SERVICE_ACCOUNT_JSON`/`SHEET_ID` the sync is a no-op and the outbox simply accumulates; the first Sunday rewrite or `?full=1` catches up.
+- The Sheets API is called with plain `fetch` (`lib/sheets/client.ts`, service-account JWT via `jose`) — the `googleapis` package was dropped because it added ~13 MB to every server function. Without `GOOGLE_SERVICE_ACCOUNT_JSON`/`SHEET_ID` the sync is a no-op and the outbox simply accumulates; the first Sunday rewrite or `?full=1` catches up.
 - Tested against an in-memory fake sheet (`tests/sheet-sync.test.ts`): push, in-place void, failure/retry, and a full rewrite that removes drift.
 
 ## Step 9 — CSV export & backups
@@ -390,3 +390,14 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 - ফর্মে মাসের ড্রপডাউন (ডিফল্ট: এই মাস, আগে পরের মাস ছিল), আর সংরক্ষণের আগেই দেখায় "X মাস থেকে এই মাস পর্যন্ত ৳Y দিতে হবে"। সংরক্ষণের পর "এখন ৳Y জমা নিন →" বোতাম সরাসরি জমা পাতায় নিয়ে যায় (সদস্য বাছাই করা থাকে)।
 - বন্ধ মাসে শেয়ার বদলালে মাস খুলতে হয় না: শেয়ার রেকর্ড জমা-খাতার সারি নয়, শুধু প্রত্যাশিত চাঁদা বদলায়; অডিট লগে থাকে।
 - share_history আগের মতোই insert-only; ভুল হলে নতুন সারি দিয়ে ঠিক করুন।
+
+## গতি: সার্ভার ফাংশন ৪২ MB → ৩.৬ MB (৮ নভেম্বর ২০২৬)
+
+মাপ: লাইভে ঠান্ডা অবস্থায় প্রথম লোড ৩.৮ সেকেন্ড, গরম অবস্থায় ০.৪–০.৫ সেকেন্ড; গ্রিড পাতার HTML ৯৬০ KB। কারণ ও সমাধান:
+
+- প্রতিটি পাতার সার্ভার ফাংশনে PGlite (শুধু লোকাল ডেভের জন্য, ১৮ MB WASM) আর `googleapis` (১৩ MB) ট্রেস হয়ে যাচ্ছিল। `googleapis` পুরোপুরি বাদ: Sheets API-র যে ৭টি কল লাগে, সেগুলো এখন সরাসরি fetch দিয়ে (`lib/sheets/client.ts`), সার্ভিস-অ্যাকাউন্ট JWT `jose` দিয়ে সই করা। PGlite আর next/og-এর ফাইল `outputFileTracingExcludes` দিয়ে বাদ (আইকন রুট তিনটিতে og ফাইল ফেরত আনা হয়েছে)। ফল: হোম পেজের ফাংশন ৪২.৫ MB → ৩.৬ MB।
+- শিট-সিঙ্ক মডিউল এখন অ্যাকশনের পর `import()` দিয়ে লোড হয়, প্রতিটি অ্যাকশনের মডিউল গ্রাফে থাকে না।
+- আরবি ফন্ট (শুধু বিসমিল্লাহ) আগে প্রতিটি পাতায় preload হতো (১০৮ KB); এখন শুধু হোম পাতায়, preload ছাড়া।
+- গ্রিড: প্রতিটি ঘরে লম্বা `title` টেক্সট বাদ, আর শুধু চলতি মাস + ২ মাস পর্যন্ত দেখায় (ভবিষ্যতের ৩০টি মাস সব ফাঁকা ঘর ছিল)। ৪১ সদস্যে ~৯৬০ KB → ~৮০ KB।
+- ডাটাবেস: `audit_log(table_name,row_id)` ইনডেক্স (migration 0019) — সদস্যের পাতায় "কে লিখেছেন" খোঁজার জন্য। টেবিলগুলো ছোট (৪১ সদস্য, ~৭০ জমা), তাই এর বাইরে ইনডেক্স দিয়ে লাভ নেই; প্রতি পাতায় কোয়েরিগুলো আগে থেকেই একসাথে (Promise.all) যায়, আর Neon পুল গরম ফাংশনে পুনর্ব্যবহার হয়।
+- মোবাইল: ৩৭৫px-এ হোম, সদস্য তালিকা, সদস্যের পাতা, গ্রিড, জমা নিন, কার কাছে কত টাকা, মাসের কাজ, আয়-ব্যয় যোগ, বকেয়া — কোথাও পাশে কাটে না (scrollWidth = viewport)।

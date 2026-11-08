@@ -134,6 +134,13 @@
       "when": 1794055451364,
       "tag": "0018_txn_via",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794107605424,
+      "tag": "0019_audit_row_index",
+      "breakpoints": true
     }
   ]
 }

@@ -52,22 +52,14 @@ async function readTabsPublic(): Promise<Record<keyof typeof TABS, string[][]>> 
 }
 
 async function readTabsApi(): Promise<Record<keyof typeof TABS, string[][]>> {
-  const encoded = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
-  if (!encoded) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is not set")
-  const creds = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"))
-  const { google } = await import("googleapis")
-  const auth = new google.auth.JWT({
-    email: creds.client_email,
-    key: creds.private_key,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-  })
-  const api = google.sheets({ version: "v4", auth })
-  const res = await api.spreadsheets.values.batchGet({
-    spreadsheetId: SOURCE_SHEET_ID,
-    ranges: Object.values(TABS).map((t) => `'${t}'`),
-    valueRenderOption: "FORMATTED_VALUE",
-  })
-  const [m, p, t] = (res.data.valueRanges ?? []).map((v) => (v.values ?? []).map((r) => r.map(String)))
+  const { getSheetsApi, readRanges } = await import("@/lib/sheets/client")
+  const g = await getSheetsApi()
+  if (!g) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON / SHEET_ID is not set")
+  const [m, p, t] = await readRanges(
+    g.api,
+    SOURCE_SHEET_ID,
+    Object.values(TABS).map((tab) => `'${tab}'`),
+  )
   return { members: m ?? [], payments: p ?? [], transactions: t ?? [] }
 }
 

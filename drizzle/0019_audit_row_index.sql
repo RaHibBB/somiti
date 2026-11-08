@@ -1,0 +1,1 @@
+CREATE INDEX "audit_log_row_idx" ON "audit_log" USING btree ("table_name","row_id");

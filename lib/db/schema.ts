@@ -222,7 +222,7 @@ export const auditLog = pgTable(
     after: jsonb("after"),
     createdAt: createdAt(),
   },
-  (t) => [index("audit_log_created_idx").on(t.createdAt)],
+  (t) => [index("audit_log_created_idx").on(t.createdAt), index("audit_log_row_idx").on(t.tableName, t.rowId)],
 )
 
 // ── Password reset tokens (only the SHA-256 of the token is stored) ─────────

@@ -5,7 +5,6 @@ import { requireAdmin } from "@/lib/auth/session"
 import type { Member } from "@/lib/db/schema"
 import { UserError } from "@/lib/services/errors"
 import { firstError } from "@/lib/validation"
-import { flushSheetOutbox } from "@/lib/sheets/sync"
 
 export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -18,7 +17,8 @@ export async function adminAction<T>(fn: (admin: Member) => Promise<T>): Promise
   const admin = await requireAdmin() // redirects when not allowed — must stay outside try
   try {
     const data = await fn(admin)
-    after(() => flushSheetOutbox().catch((e) => console.error("sheet sync failed", e)))
+    // Loaded lazily so the sheet-sync code stays out of every action's module graph.
+    after(() => import("@/lib/sheets/sync").then((m) => m.flushSheetOutbox()).catch((e) => console.error("sheet sync failed", e)))
     return { ok: true, data }
   } catch (err) {
     if (err instanceof UserError) return { ok: false, error: err.message }
