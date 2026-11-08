@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { ChevronRight, Landmark, Smartphone } from "lucide-react"
 import { CopyButton } from "@/components/copy-button"
 import { getBank } from "@/lib/bank"

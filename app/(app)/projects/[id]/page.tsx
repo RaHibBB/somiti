@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { notFound } from "next/navigation"
 import { asc, eq } from "drizzle-orm"
 import { FileDown, ImageIcon, Minus, Plus, ShoppingCart } from "lucide-react"

@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import Link from "@/components/link"
 import { usePathname } from "next/navigation"
 import { Home, User, Users, Grid3x3, Menu, HandCoins, Receipt, ShieldAlert } from "lucide-react"
 import { cn } from "@/lib/utils"

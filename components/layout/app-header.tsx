@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { Bell, LogIn } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { toBn } from "@/lib/format"

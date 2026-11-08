@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { ArrowLeftRight, ChevronRight, LogIn, LogOut } from "lucide-react"
 import { ADMIN_MORE_NAV, ADMIN_NAV, MAIN_NAV, MY_NAV, PERSONAL_HREFS, REPORT_NAV, type NavItem } from "@/components/layout/nav-items"
 import { PageTitle } from "@/components/layout/page-title"

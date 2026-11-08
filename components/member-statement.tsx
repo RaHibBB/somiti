@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { FileDown } from "lucide-react"
 import type { MemberLedger } from "@/lib/data"
 import type { PaymentPeople } from "@/lib/payment-people"

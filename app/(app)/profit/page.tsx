@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { Fragment } from "react"
 import { desc } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"

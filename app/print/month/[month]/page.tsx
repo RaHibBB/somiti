@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { notFound } from "next/navigation"
 import { STATUS_LABEL } from "@/components/member-statement"
 import { PrintDoc } from "@/components/print/print-doc"

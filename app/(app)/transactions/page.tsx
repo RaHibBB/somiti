@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { FileDown, ImageIcon, Plus } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { getViewer } from "@/lib/auth/session"

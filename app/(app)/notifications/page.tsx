@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { after } from "next/server"
 import { and, desc, eq, isNull } from "drizzle-orm"
 import { Settings } from "lucide-react"

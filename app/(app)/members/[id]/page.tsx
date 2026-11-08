@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { notFound } from "next/navigation"
 import { MessageCircle } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"

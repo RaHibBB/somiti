@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { redirect } from "next/navigation"
 import { AuthShell } from "@/components/layout/auth-shell"
 import { getCurrentMember } from "@/lib/auth/session"

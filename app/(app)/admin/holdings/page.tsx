@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { asc } from "drizzle-orm"
 import { Check, Landmark, Pencil } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"

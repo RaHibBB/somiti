@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
 import { PushToggle } from "@/components/push-toggle"

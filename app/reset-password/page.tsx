@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { AuthShell } from "@/components/layout/auth-shell"
 import { getDb } from "@/lib/db"
 import { checkResetToken } from "@/lib/services/password-reset"

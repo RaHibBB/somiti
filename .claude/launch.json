@@ -1,6 +1,25 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "samiti-dev", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev"], "port": 3000 }
+    {
+      "name": "samiti-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "samiti-prod-local",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "exec",
+        "next",
+        "start",
+        "-p",
+        "3001"
+      ],
+      "port": 3001
+    }
   ]
 }

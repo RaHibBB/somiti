@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState } from "react"
-import Link from "next/link"
+import Link from "@/components/link"
 import { Input } from "@/components/ui/input"
 import { Field, FormError, SubmitButton } from "@/components/forms/form-bits"
 import { PasswordInput } from "@/components/forms/password-input"

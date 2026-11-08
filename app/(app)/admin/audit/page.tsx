@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "@/components/link"
 import { count, desc, eq } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"

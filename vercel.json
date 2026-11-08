@@ -5,11 +5,7 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/sheet-sync",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/cron/notify",
+      "path": "/api/cron/daily",
       "schedule": "0 3 * * *"
     }
   ]
