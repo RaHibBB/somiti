@@ -2,6 +2,7 @@ import Link from "next/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
 import { PaymentOptions } from "@/components/payment-options"
+import { getGroupUrl } from "@/lib/group"
 import { Logo } from "@/components/logo"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
 import { getViewer } from "@/lib/auth/session"
@@ -292,6 +293,16 @@ export default async function DashboardPage() {
         >
           <Smartphone className="size-5" /> টাকা দিন / পাঠিয়েছি — জানান
         </Link>
+        {getGroupUrl() ? (
+          <a
+            href={getGroupUrl()!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white active:opacity-90"
+          >
+            <MessageCircle className="size-5" /> সমিতির WhatsApp গ্রুপ
+          </a>
+        ) : null}
         <Link href="/me" className="flex h-11 items-center justify-center gap-1 text-base text-brand-navy">
           আমার পুরো হিসাব দেখুন <ChevronRight className="size-5" />
         </Link>
