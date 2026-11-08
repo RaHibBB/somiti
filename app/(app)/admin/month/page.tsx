@@ -1,9 +1,11 @@
 import Link from "next/link"
 import { asc, desc, eq } from "drizzle-orm"
-import { Check, ChevronRight } from "lucide-react"
+import { Check, ChevronRight, MessageCircle } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
-import { getSnapshot, loadTransactions } from "@/lib/data"
+import { getSnapshot, loadFund, loadTransactions } from "@/lib/data"
+import { appUrl } from "@/lib/app-url"
+import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
 import { getDb } from "@/lib/db"
 import { cashHandovers, monthCloseEvents } from "@/lib/db/schema"
 import { formatDateTime, monthLabel, taka, toBn } from "@/lib/format"
@@ -32,7 +34,7 @@ function Step({ n, done, title, children }: { n: number; done: boolean; title: s
 
 const linkBtn = "flex h-11 items-center justify-between rounded-lg border bg-white px-3 text-base active:bg-muted"
 
-/** Four steps: collect, remind, bank, close. Closing is optional — it just locks the month once everything is final. */
+/** Five steps: collect, remind, bank, group summary, close. Closing is optional — it just locks the month once everything is final. */
 export default async function MonthPage({ searchParams }: PageProps<"/admin/month">) {
   await requireAdmin()
   const db = getDb()
@@ -43,10 +45,12 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
   const month = typeof raw === "string" && /^\d{4}-\d{2}$/.test(raw) && `${raw}-01` >= first && `${raw}-01` <= current ? `${raw}-01` : current
   const label = monthLabel(month)
 
-  const [events, handovers, txns] = await Promise.all([
+  const [events, handovers, txns, fund, base] = await Promise.all([
     db.select().from(monthCloseEvents).where(eq(monthCloseEvents.month, month)).orderBy(desc(monthCloseEvents.id)),
     db.select().from(cashHandovers).orderBy(asc(cashHandovers.id)),
     loadTransactions(db),
+    loadFund(db),
+    appUrl(),
   ])
   const latest = events[0]
   const closed = latest?.kind === "close"
@@ -67,6 +71,27 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
     txns,
   )
   const holdingNow = hold.holders.filter((h) => h.closing !== 0)
+
+  // One tap: the month's summary for the WhatsApp group (who paid, who owes, bank, fund).
+  const groupMsg = monthlyGroupMessage({
+    month,
+    paidCount: lines.filter((l) => l.status === "paid").length,
+    activeCount: active.length,
+    collected: paid,
+    expected,
+    owing: active
+      .filter((m) => m.due > 0)
+      .sort((a, b) => b.due - a.due)
+      .map((m) => ({ no: m.member.memberNo, name: m.member.nameBn, due: m.due })),
+    notYet: active
+      .filter((m) => m.due === 0 && (m.lines.find((l) => l.month === month)?.remaining ?? 0) > 0)
+      .map((m) => ({ no: m.member.memberNo, name: m.member.nameBn })),
+    fundTotal: fund.total,
+    cash: fund.cash,
+    invested: fund.invested,
+    banked: { toBank: hold.toBank, inHand: hold.inHand },
+    reportUrl: `${base}/print/month/${month.slice(0, 7)}`,
+  })
 
   const months: string[] = []
   for (let m = current; m >= first && months.length < 12; m = addMonths(m, -1)) months.push(m)
@@ -138,7 +163,19 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
           </Link>
         </Step>
 
-        <Step n={4} done={closed} title="সব ঠিক থাকলে মাস বন্ধ করুন (ঐচ্ছিক)">
+        <Step n={4} done={false} title="গ্রুপে মাসের হিসাব পাঠান">
+          <p className="text-sm text-muted-foreground">কতজন দিলেন, কে বাকি, ব্যাংকে কত, তহবিল কত — মেসেজ তৈরি থাকবে, শুধু গ্রুপ বেছে পাঠান।</p>
+          <a
+            href={waLink(null, groupMsg)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white active:opacity-90"
+          >
+            <MessageCircle className="size-5" /> মাসিক হিসাব WhatsApp গ্রুপে পাঠান
+          </a>
+        </Step>
+
+        <Step n={5} done={closed} title="সব ঠিক থাকলে মাস বন্ধ করুন (ঐচ্ছিক)">
           {!closed && hold.inHand > 0 ? <p className="text-sm text-amber-800">এখনো {taka(hold.inHand)} কারো হাতে আছে — চাইলে তবুও বন্ধ করা যায়, টাকাটা পরের মাসে &quot;আগের মাস থেকে&quot; হিসেবে থাকবে।</p> : null}
           <CloseControls month={month} closed={closed} label={label} />
         </Step>

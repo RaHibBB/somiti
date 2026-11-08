@@ -45,6 +45,16 @@ describe("monthly group message", () => {
     expect(msg).toContain("৳১৫,০০০ / ৳১৬,৫০০ (৩০/৩২ জন")
     expect(msg).toContain("• ৫. করিম — ৳১,০০০")
     expect(msg).toContain("https://example.test/print/month/2026-10")
+    expect(msg).not.toContain("ব্যাংকে জমা")
+  })
+
+  it("adds the bank line when asked, and only mentions cash in hand when there is some", async () => {
+    const { monthlyGroupMessage } = await import("@/lib/whatsapp")
+    const base = { month: "2026-11-01", paidCount: 1, activeCount: 1, collected: 500, expected: 500, owing: [], fundTotal: 500, cash: 500, invested: 0, reportUrl: "u" }
+    expect(monthlyGroupMessage({ ...base, banked: { toBank: 400, inHand: 100 } })).toContain("ব্যাংকে জমা: ৳৪০০ · অ্যাডমিনের হাতে: ৳১০০")
+    const allBanked = monthlyGroupMessage({ ...base, banked: { toBank: 500, inHand: 0 } })
+    expect(allBanked).toContain("ব্যাংকে জমা: ৳৫০০")
+    expect(allBanked).not.toContain("হাতে")
   })
 })
 
