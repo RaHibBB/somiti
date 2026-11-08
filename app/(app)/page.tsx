@@ -3,6 +3,7 @@ import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
 import { PaymentOptions } from "@/components/payment-options"
 import { getGroupUrl } from "@/lib/group"
+import { GroupShare } from "@/components/group-share"
 import { Logo } from "@/components/logo"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
 import { getViewer } from "@/lib/auth/session"
@@ -15,7 +16,7 @@ import { after } from "next/server"
 import { and, count, eq, gt, isNull, notExists, or } from "drizzle-orm"
 import { CalendarCheck, CalendarClock, HandCoins, LogIn, MessageCircle, Plus, Smartphone, UserPlus, Users, Vote } from "lucide-react"
 import { appUrl } from "@/lib/app-url"
-import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
+import { monthlyGroupMessage } from "@/lib/whatsapp"
 import { dateLongBn, formatDate, monthLabel, taka, toBn } from "@/lib/format"
 import { dueReminder, monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
@@ -212,14 +213,7 @@ export default async function DashboardPage() {
               <p className="text-xs text-red-800/80">মেয়াদ পেরিয়েছে {toBn(owingCount)} জন</p>
             </Link>
           </div>
-          <a
-            href={waLink(null, groupMsg)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white active:opacity-90"
-          >
-            <MessageCircle className="size-5" /> মাসিক হিসাব WhatsApp গ্রুপে পাঠান
-          </a>
+          <GroupShare text={groupMsg} groupUrl={getGroupUrl()} label="মাসিক হিসাব WhatsApp গ্রুপে পাঠান" />
           </>
           ) : (
             <Link href="/grid" className="flex h-11 items-center justify-center gap-1 rounded-xl bg-secondary text-base text-brand-navy">

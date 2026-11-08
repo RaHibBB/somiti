@@ -1,11 +1,13 @@
 import Link from "next/link"
 import { asc, desc, eq } from "drizzle-orm"
-import { Check, ChevronRight, MessageCircle } from "lucide-react"
+import { Check, ChevronRight } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
 import { getSnapshot, loadFund, loadTransactions } from "@/lib/data"
 import { appUrl } from "@/lib/app-url"
-import { monthlyGroupMessage, waLink } from "@/lib/whatsapp"
+import { monthlyGroupMessage } from "@/lib/whatsapp"
+import { getGroupUrl } from "@/lib/group"
+import { GroupShare } from "@/components/group-share"
 import { getDb } from "@/lib/db"
 import { cashHandovers, monthCloseEvents } from "@/lib/db/schema"
 import { formatDateTime, monthLabel, taka, toBn } from "@/lib/format"
@@ -164,15 +166,8 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
         </Step>
 
         <Step n={4} done={false} title="গ্রুপে মাসের হিসাব পাঠান">
-          <p className="text-sm text-muted-foreground">কতজন দিলেন, কে বাকি, ব্যাংকে কত, তহবিল কত — মেসেজ তৈরি থাকবে, শুধু গ্রুপ বেছে পাঠান।</p>
-          <a
-            href={waLink(null, groupMsg)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#25D366] text-base font-semibold text-white active:opacity-90"
-          >
-            <MessageCircle className="size-5" /> মাসিক হিসাব WhatsApp গ্রুপে পাঠান
-          </a>
+          <p className="text-sm text-muted-foreground">কতজন দিলেন, কে বাকি, ব্যাংকে কত, তহবিল কত — মেসেজ তৈরি থাকবে।</p>
+          <GroupShare text={groupMsg} groupUrl={getGroupUrl()} label="মাসিক হিসাব WhatsApp গ্রুপে পাঠান" />
         </Step>
 
         <Step n={5} done={closed} title="সব ঠিক থাকলে মাস বন্ধ করুন (ঐচ্ছিক)">
