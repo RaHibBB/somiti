@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { activeMemberIds, notifyLater } from "@/lib/notify"
 import { z } from "zod"
 import { adminAction, type ActionResult } from "@/lib/actions"
 import { getDb } from "@/lib/db"
@@ -12,7 +13,10 @@ type State<T> = ActionResult<T> | undefined
 export async function createNoticeAction(_: State<null>, fd: FormData) {
   return adminAction(async (admin) => {
     const { title, body } = z.object({ title: reqText(200, "শিরোনাম লিখুন।"), body: reqText(5000, "লেখা দিন।") }).parse(formObject(fd))
-    await createNotice(getDb(), admin.id, title, body)
+    const n = await createNotice(getDb(), admin.id, title, body)
+    notifyLater(async (db) =>
+      (await activeMemberIds(db)).map((id) => ({ memberId: id, kind: "notice" as const, title: `নোটিশ: ${n.title}`, body: n.body.slice(0, 180), url: "/notices" })),
+    )
     revalidatePath("/", "layout")
     return null
   })

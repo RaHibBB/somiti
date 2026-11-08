@@ -1,6 +1,8 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { notifyLater, type NewNotification } from "@/lib/notify"
+import { paymentNotification } from "@/lib/notify-messages"
 import { z } from "zod"
 import { adminAction } from "@/lib/actions"
 import { getDb } from "@/lib/db"
@@ -35,6 +37,7 @@ export async function bulkPayAction(input: z.input<typeof schema>) {
     const db = getDb()
     const snap = await loadSnapshot(db)
     const result: BulkResult = { saved: [], skipped: [] }
+    const fresh: NewNotification[] = []
     for (const memberId of [...new Set(data.memberIds)]) {
       const entry = snap.members.find((m) => m.member.id === memberId)
       if (!entry) continue
@@ -63,11 +66,13 @@ export async function bulkPayAction(input: z.input<typeof schema>) {
           receivedBy: data.receivedBy,
         })
         result.saved.push({ memberId, name, phone: entry.member.phone, receiptNo: p.receiptNo, amount: p.amount, dueAfter: Math.max(0, entry.due - p.amount) })
+        fresh.push(paymentNotification(memberId, [p]))
       } catch (err) {
         if (err instanceof UserError) result.skipped.push({ memberId, name, reason: err.message })
         else throw err
       }
     }
+    notifyLater(async () => fresh)
     revalidatePath("/", "layout")
     return result
   })

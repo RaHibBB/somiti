@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
+import { PushToggle } from "@/components/push-toggle"
 import { PaymentOptions } from "@/components/payment-options"
 import { getGroupUrl } from "@/lib/group"
 import { getBank } from "@/lib/bank"
@@ -131,6 +132,11 @@ export default async function DashboardPage() {
         ) : null}
       </section>
       <InstallHint />
+      {me ? (
+        <div className="lg:col-span-2">
+          <PushToggle variant="prompt" />
+        </div>
+      ) : null}
       {!me ? (
         <p className="rounded-xl bg-secondary px-3 py-2 text-center text-sm text-muted-foreground lg:col-span-2">
           কে কত দিয়েছেন, বকেয়া, তহবিল, আয়-ব্যয় — সব এখানে দেখা যায়। দেখতে লগইন লাগে না।

@@ -1,6 +1,7 @@
 // The app's menu, in one place: used by the phone "আরও" page and the laptop sidebar.
 import {
   Ban,
+  Bell,
   CalendarCheck,
   BookOpen,
   ClipboardList,
@@ -35,7 +36,7 @@ export type NavItem = {
 }
 
 /** Pages that act as a specific person (need login). */
-export const PERSONAL_HREFS = new Set(["/me", "/report", "/settings/pin"])
+export const PERSONAL_HREFS = new Set(["/me", "/report", "/settings/pin", "/notifications"])
 
 /** Everyone, including visitors. */
 export const MAIN_NAV: NavItem[] = [
@@ -60,7 +61,8 @@ export const REPORT_NAV: NavItem[] = [
 export const MY_NAV: NavItem[] = [
   { href: "/me", label: "আমার হিসাব", icon: User },
   { href: "/report", label: "টাকা দিন (বিকাশ / ব্যাংক)", short: "টাকা দিন", icon: Smartphone },
-  { href: "/settings/pin", label: "পাসওয়ার্ড ও ইমেইল", icon: KeyRound },
+  { href: "/notifications", label: "নোটিফিকেশন", icon: Bell },
+  { href: "/settings/pin", label: "সেটিংস (পাসওয়ার্ড, নোটিফিকেশন)", short: "সেটিংস", icon: KeyRound },
 ]
 
 /** Admins (admin view). */

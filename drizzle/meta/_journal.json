@@ -148,6 +148,13 @@
       "when": 1794115081078,
       "tag": "0020_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794117405378,
+      "tag": "0021_notifications",
+      "breakpoints": true
     }
   ]
 }

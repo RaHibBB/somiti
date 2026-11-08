@@ -1,5 +1,8 @@
 "use server"
 
+import { activeMemberIds, notifyLater } from "@/lib/notify"
+import { formatDate } from "@/lib/format"
+
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { adminAction, type ActionResult } from "@/lib/actions"
@@ -48,6 +51,15 @@ export async function createProposalAction(_: State<{ id: number }>, fd: FormDat
       amount: input.amount ?? null,
       closesAt,
     })
+    notifyLater(async (db) =>
+      (await activeMemberIds(db)).map((id) => ({
+        memberId: id,
+        kind: "vote" as const,
+        title: `নতুন ভোট: ${p.title}`,
+        body: `${formatDate(input.closesOn)} পর্যন্ত ভোট দেওয়া যাবে। অ্যাপে গিয়ে হ্যাঁ/না দিন।`,
+        url: `/proposals/${p.id}`,
+      })),
+    )
     revalidatePath("/", "layout")
     return { id: p.id }
   })

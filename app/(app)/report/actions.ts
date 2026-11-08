@@ -6,6 +6,8 @@ import { requireMember } from "@/lib/auth/session"
 import { getDb } from "@/lib/db"
 import { UserError } from "@/lib/services/errors"
 import { submitReport } from "@/lib/services/payment-reports"
+import { adminIds, notifyLater } from "@/lib/notify"
+import { taka, toBn } from "@/lib/format"
 import { firstError, isoDate, monthKey, optText } from "@/lib/validation"
 
 const schema = z.object({
@@ -24,7 +26,16 @@ export type ReportState = { ok: true } | { ok: false; error: string }
 export async function submitReportAction(input: z.input<typeof schema>): Promise<ReportState> {
   const me = await requireMember()
   try {
-    await submitReport(getDb(), me, schema.parse(input))
+    const r = await submitReport(getDb(), me, schema.parse(input))
+    notifyLater(async (db) =>
+      (await adminIds(db)).map((id) => ({
+        memberId: id,
+        kind: "admin" as const,
+        title: `${me.nameBn} ${taka(r.amount)} জমা জানিয়েছেন`,
+        body: `সদস্য নং ${toBn(me.memberNo)} · ট্রানজেকশন ${r.trxId}। মিলিয়ে দেখে অনুমোদন দিন।`,
+        url: "/admin/reports",
+      })),
+    )
   } catch (err) {
     if (err instanceof UserError) return { ok: false, error: err.message }
     if (err instanceof z.ZodError) return { ok: false, error: firstError(err) }

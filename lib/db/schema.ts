@@ -68,6 +68,8 @@ export const members = pgTable(
     failedLogins: integer("failed_logins").notNull().default(0),
     lockedUntil: timestamp("locked_until", { withTimezone: true }),
     sessionVersion: integer("session_version").notNull().default(1),
+    // Notification kinds this member turned off (see lib/notify-kinds.ts). Empty = everything on.
+    notifyOff: text("notify_off").array().notNull().default(sql`'{}'::text[]`),
     notes: text("notes"),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     cancelReason: text("cancel_reason"),
@@ -500,7 +502,47 @@ export const profitDistributions = pgTable(
   (t) => [uniqueIndex("profit_distributions_one_valid_per_year").on(t.periodStart).where(sql`status = 'valid'`)],
 )
 
+// ── Notifications ───────────────────────────────────────────────────────────
+// One row per browser/phone that allowed push notifications. Not money data: rows are removed
+// when the push service says the subscription is gone, or when the member turns it off.
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: serial("id").primaryKey(),
+    memberId: integer("member_id")
+      .notNull()
+      .references(() => members.id),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("push_subscriptions_member_idx").on(t.memberId)],
+)
+
+// The in-app inbox (bell). Every notification is stored here, push or not.
+// dedupe_key stops a daily reminder from being sent twice (e.g. "due:2026-11:31").
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: serial("id").primaryKey(),
+    memberId: integer("member_id")
+      .notNull()
+      .references(() => members.id),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    url: text("url"),
+    dedupeKey: text("dedupe_key").unique(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("notifications_member_idx").on(t.memberId, t.id)],
+)
+
 export type Member = typeof members.$inferSelect
+export type Notification = typeof notifications.$inferSelect
 export type Payment = typeof payments.$inferSelect
 export type Transaction = typeof transactions.$inferSelect
 export type Project = typeof projects.$inferSelect

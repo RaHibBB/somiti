@@ -1,6 +1,8 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { notifyLater } from "@/lib/notify"
+import { paymentNotification } from "@/lib/notify-messages"
 import { z } from "zod"
 import { adminAction } from "@/lib/actions"
 import { getDb } from "@/lib/db"
@@ -39,6 +41,7 @@ export async function takePaymentAction(input: z.input<typeof schema>) {
     const data = schema.parse(input)
     const db = getDb()
     const rows = await recordPayments(db, admin.id, data)
+    notifyLater(async () => [paymentNotification(data.memberId, rows)])
     const snap = await loadSnapshot(db)
     const after = snap.members.find((m) => m.member.id === data.memberId)
     const dueAfter = after?.due ?? 0

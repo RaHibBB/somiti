@@ -5,7 +5,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { RENEW_AFTER, SESSION_COOKIE, SESSION_MAX_AGE, signSession, verifySession } from "@/lib/auth/token"
 
-const NEEDS_LOGIN = ["/admin", "/me", "/report", "/settings"]
+const NEEDS_LOGIN = ["/admin", "/me", "/report", "/settings", "/notifications"]
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
