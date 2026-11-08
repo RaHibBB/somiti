@@ -83,6 +83,8 @@ export function monthlyGroupMessage(input: {
   invested: number
   /** Optional: how much of the month's collection has reached the bank and what is still in admins' hands. */
   banked?: { toBank: number; inHand: number }
+  /** Where to send money (see payLine), shown under the dues so members can pay right away. */
+  pay?: string
   reportUrl: string
 }): string {
   // Never say "no dues" while some members haven't paid this month — that reads as a contradiction.
@@ -101,6 +103,7 @@ export function monthlyGroupMessage(input: {
     ...(input.notYet?.length
       ? ["", `এই মাসের চাঁদা এখনো দেননি (${toBn(input.notYet.length)} জন): ${input.notYet.map((o) => `${toBn(o.no)}. ${o.name}`).join(", ")}`]
       : []),
+    ...(input.pay ? ["", "টাকা পাঠানোর নম্বর:", input.pay] : []),
     ...(input.banked ? ["", `ব্যাংকে জমা: ${taka(input.banked.toBank)}${input.banked.inHand > 0 ? ` · অ্যাডমিনের হাতে: ${taka(input.banked.inHand)}` : ""}`] : []),
     "",
     `সমিতির তহবিল: ${taka(input.fundTotal)} (নগদ ${taka(input.cash)}, বিনিয়োগ ${taka(input.invested)})`,

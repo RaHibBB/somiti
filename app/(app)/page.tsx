@@ -3,6 +3,8 @@ import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
 import { PaymentOptions } from "@/components/payment-options"
 import { getGroupUrl } from "@/lib/group"
+import { getBank } from "@/lib/bank"
+import { payLine } from "@/lib/payment-info"
 import { GroupShare } from "@/components/group-share"
 import { Logo } from "@/components/logo"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
@@ -82,6 +84,7 @@ export default async function DashboardPage() {
         fundTotal: fund.total,
         cash: fund.cash,
         invested: fund.invested,
+        pay: payLine(getBank()),
         reportUrl: `${await appUrl()}/print/month/${thisMonth.slice(0, 7)}`,
       })
     : ""

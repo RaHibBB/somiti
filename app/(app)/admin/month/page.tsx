@@ -7,6 +7,8 @@ import { getSnapshot, loadFund, loadTransactions } from "@/lib/data"
 import { appUrl } from "@/lib/app-url"
 import { monthlyGroupMessage } from "@/lib/whatsapp"
 import { getGroupUrl } from "@/lib/group"
+import { getBank } from "@/lib/bank"
+import { payLine } from "@/lib/payment-info"
 import { GroupShare } from "@/components/group-share"
 import { getDb } from "@/lib/db"
 import { cashHandovers, monthCloseEvents } from "@/lib/db/schema"
@@ -92,6 +94,7 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
     cash: fund.cash,
     invested: fund.invested,
     banked: { toBank: hold.toBank, inHand: hold.inHand },
+    pay: payLine(getBank()),
     reportUrl: `${base}/print/month/${month.slice(0, 7)}`,
   })
 

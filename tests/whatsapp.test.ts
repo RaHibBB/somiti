@@ -56,6 +56,15 @@ describe("monthly group message", () => {
     expect(allBanked).toContain("ব্যাংকে জমা: ৳৫০০")
     expect(allBanked).not.toContain("হাতে")
   })
+
+  it("adds where to send money when given", async () => {
+    const { monthlyGroupMessage } = await import("@/lib/whatsapp")
+    const { payLine } = await import("@/lib/payment-info")
+    const base = { month: "2026-11-01", paidCount: 0, activeCount: 1, collected: 0, expected: 500, owing: [], fundTotal: 0, cash: 0, invested: 0, reportUrl: "u" }
+    const msg = monthlyGroupMessage({ ...base, pay: payLine({ bank: "Test Bank", branch: "Main", accountName: "A B", accountNo: "123456", routingNo: null }) })
+    expect(msg).toContain(["টাকা পাঠানোর নম্বর:", "💳 বিকাশ (Personal): 01859336893", "🏦 Test Bank — A/C 123456 (A B, Main)"].join("\n"))
+    expect(monthlyGroupMessage(base)).not.toContain("টাকা পাঠানোর নম্বর")
+  })
 })
 
 describe("member and notice messages", () => {
