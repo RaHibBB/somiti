@@ -1,4 +1,5 @@
 import { PageTitle } from "@/components/layout/page-title"
+import { PaymentNumber } from "@/components/payment-number"
 import { requireMember } from "@/lib/auth/session"
 import { getDb } from "@/lib/db"
 import { getSnapshot } from "@/lib/data"
@@ -27,6 +28,7 @@ export default async function ReportPage() {
   return (
     <div className="space-y-5">
       <PageTitle>বিকাশ/নগদে জমা জানান</PageTitle>
+      <PaymentNumber />
       <ReportForm open={open} today={snap.today} />
 
       {mine.length ? (

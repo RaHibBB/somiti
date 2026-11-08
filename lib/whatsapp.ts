@@ -1,5 +1,6 @@
 // wa.me links with prefilled Bengali text — free, no API.
 import { formatDate, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
+import { PAY_LINE } from "@/lib/payment-info"
 
 export const SAMITI_NAME = "পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি"
 
@@ -58,6 +59,7 @@ export function reminderMessage(input: { name: string; due: number; months: stri
     `একটু মনে করিয়ে দিচ্ছি — সমিতিতে আপনার ${toBn(input.months.length)} মাসের চাঁদা বকেয়া আছে (${monthText})।`,
     `মোট বকেয়া: ${taka(input.due)}`,
     `সুবিধামতো দ্রুত পরিশোধ করলে খুশি হব। প্রতি মাসের চাঁদা ${toBn(input.dueDay)} তারিখের মধ্যে দিতে হয়। কোনো সমস্যা থাকলে জানাবেন।`,
+    PAY_LINE,
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ].join("\n")
 }
@@ -142,6 +144,7 @@ export function upcomingReminderMessage(input: { name: string; month: string; am
     greeting(input.name),
     `একটু মনে করিয়ে দিচ্ছি — ${monthLabel(input.month)}-এর চাঁদা ${taka(input.amount)} এখনো জমা হয়নি।`,
     `সুবিধামতো ${toBn(input.dueDay)} তারিখের মধ্যে দিয়ে দিলে ভালো হয়।`,
+    PAY_LINE,
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ].join("\n")
 }

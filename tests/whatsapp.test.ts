@@ -93,6 +93,7 @@ describe("this month not yet paid", () => {
     expect(owing).toContain("এই মাসের চাঁদা ৳৫০০ এখনো জমা হয়নি — ১০ তারিখের মধ্যে দিন")
     expect(accountSummaryMessage({ ...base, paid: 500, currentOpen: 0 })).toContain("কোনো বকেয়া নেই")
     expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10 })).toContain("অক্টোবর ২০২৬-এর চাঁদা ৳৫০০ এখনো জমা হয়নি")
+    expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10 })).toContain("বিকাশ (Personal): 01859336893")
   })
 })
 

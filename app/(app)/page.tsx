@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
+import { PaymentNumber } from "@/components/payment-number"
 import { Logo } from "@/components/logo"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
 import { getViewer } from "@/lib/auth/session"
@@ -284,6 +285,7 @@ export default async function DashboardPage() {
             <span className={cn("rounded-md px-3 py-1 text-sm", STATUS_CLASS[current.status])}>{STATUS_LABEL[current.status]}</span>
           </div>
         ) : null}
+        <PaymentNumber compact />
         <Link
           href="/report"
           className="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-[#e2136e] bg-white px-3 text-base font-medium text-[#b10f57] active:bg-pink-50"
