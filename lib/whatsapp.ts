@@ -175,3 +175,38 @@ export function inviteMessage(input: {
     "প্রথমবার ঢুকলে নিজের একটি নতুন পাসওয়ার্ড দিতে হবে। দয়া করে পাসওয়ার্ড কাউকে বলবেন না। কোনো সমস্যা হলে জানাবেন।",
   ].join("\n")
 }
+
+/** A project's account for the samiti group: purchase, costs by heading, income, result. */
+export function projectMessage(input: {
+  name: string
+  closed: boolean
+  closedOn: string | null
+  startedOn: string
+  totals: { capital: number; costs: number; income: number; spent: number; result: number }
+  breakdown: { kind: "capital" | "cost" | "income"; category: string; amount: number }[]
+  url: string
+}): string {
+  const t = input.totals
+  const costLines = input.breakdown.filter((b) => b.kind === "cost").map((b) => `   • ${b.category}: ${taka(b.amount)}`)
+  const resultLine = input.closed
+    ? t.result >= 0
+      ? `✅ লাভ: ${taka(t.result)}`
+      : `⚠️ ক্ষতি: ${taka(-t.result)}`
+    : t.income > 0
+      ? `এখন পর্যন্ত আয় − খরচ: ${t.result >= 0 ? "" : "−"}${taka(Math.abs(t.result))} (প্রকল্প চলছে)`
+      : "প্রকল্প চলছে — এখনো আয় হয়নি"
+  return [
+    `📊 ${SAMITI_NAME}`,
+    `প্রকল্প: *${input.name}*`,
+    input.closed && input.closedOn ? `${formatDate(input.startedOn)} – ${formatDate(input.closedOn)} (শেষ)` : `শুরু: ${formatDate(input.startedOn)}`,
+    "",
+    `কেনা / মূলধন: ${taka(t.capital)}`,
+    `খরচ: ${taka(t.costs)}`,
+    ...costLines,
+    `মোট খরচ: ${taka(t.spent)}`,
+    `আয় / বিক্রি: ${taka(t.income)}`,
+    "",
+    resultLine,
+    `বিস্তারিত: ${input.url}`,
+  ].join("\n")
+}

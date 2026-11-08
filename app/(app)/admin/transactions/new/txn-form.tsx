@@ -9,6 +9,7 @@ import { Field, FormError, SubmitButton } from "@/components/forms/form-bits"
 import { NativeSelect } from "@/components/forms/native-select"
 import { InvestmentImpact, parseAmount } from "@/components/investment-impact"
 import { taka, toBn, TXN_TYPE_LABELS } from "@/lib/format"
+import { CATEGORY_PRESETS, KIND_LABELS, KIND_TO_TYPE, TYPE_TO_KIND, type ProjectEntryKind } from "@/lib/projects"
 import { compressImage } from "@/lib/image-compress"
 import { cn } from "@/lib/utils"
 import { createTransactionAction } from "./actions"
@@ -16,6 +17,7 @@ import { createTransactionAction } from "./actions"
 const INFLOW_TYPES = new Set(["business_income", "investment_return", "bank_profit"])
 
 export type PassedProposal = { id: number; title: string; amount: number | null }
+export type OpenProject = { id: number; name: string; startedOn: string }
 
 export function TransactionForm({
   today,
@@ -23,18 +25,30 @@ export function TransactionForm({
   proposals,
   admins,
   meId,
+  projects = [],
+  initialProjectId = null,
+  initialKind = null,
 }: {
   today: string
   fund: { cash: number; invested: number; minCashPct: number }
   proposals: PassedProposal[]
   admins: { id: number; name: string }[]
   meId: number
+  projects?: OpenProject[]
+  initialProjectId?: number | null
+  initialKind?: ProjectEntryKind | null
 }) {
   const [state, formAction] = useActionState(createTransactionAction, undefined)
-  const [type, setType] = useState("expense")
+  const [projectId, setProjectId] = useState<string>(initialProjectId ? String(initialProjectId) : "")
+  const [type, setType] = useState<string>(initialKind ? KIND_TO_TYPE[initialKind] : "expense")
+  const [category, setCategory] = useState("")
+  const inProject = projectId !== ""
+  const kind = inProject ? (TYPE_TO_KIND[type as keyof typeof TYPE_TO_KIND] ?? "cost") : null
+  const project = projects.find((p) => String(p.id) === projectId)
   const [amount, setAmount] = useState("")
   const [via, setVia] = useState<"bank" | "cash">("bank")
-  const isInvestment = type === "investment"
+  // The 70/30 check applies to anything that takes money out into an investment or a project.
+  const isInvestment = type === "investment" || (inProject && type === "expense")
   const photo = useRef<File | null>(null)
   const [preview, setPreview] = useState<{ url: string; kb: number } | null>(null)
   const [photoError, setPhotoError] = useState<string>()
@@ -73,27 +87,108 @@ export function TransactionForm({
         <p className="rounded-xl border-2 border-green-600 bg-green-50 p-4 text-center text-lg text-green-900">
           ✓ সংরক্ষিত হয়েছে (নং {toBn(state.data.id)})
         </p>
-        <Link href="/admin/transactions/new" className="block rounded-xl bg-primary py-3 text-center text-base text-white">
-          আরেকটি যোগ করুন
-        </Link>
-        <Link href="/transactions" className="block rounded-xl border bg-white py-3 text-center text-base">
-          সব আয়-ব্যয় দেখুন
-        </Link>
+        {state.data.projectId ? (
+          <>
+            {/* A plain link reloads the page, so the form starts fresh for the next entry. */}
+            <a href={`/admin/transactions/new?project=${state.data.projectId}&kind=${kind === "income" ? "income" : "cost"}`} className="block rounded-xl bg-primary py-3 text-center text-base text-white">
+              এই প্রকল্পে আরেকটি এন্ট্রি
+            </a>
+            <Link href={`/projects/${state.data.projectId}`} className="block rounded-xl border bg-white py-3 text-center text-base">
+              প্রকল্পের হিসাব দেখুন
+            </Link>
+          </>
+        ) : (
+          <>
+            <a href="/admin/transactions/new" className="block rounded-xl bg-primary py-3 text-center text-base text-white">
+              আরেকটি যোগ করুন
+            </a>
+            <Link href="/transactions" className="block rounded-xl border bg-white py-3 text-center text-base">
+              সব আয়-ব্যয় দেখুন
+            </Link>
+          </>
+        )}
       </div>
     )
   }
 
   return (
     <form action={submit} className="space-y-4">
-      <Field label="ধরন" htmlFor="type">
-        <NativeSelect id="type" name="type" value={type} onChange={(e) => setType(e.target.value)}>
-          {Object.entries(TXN_TYPE_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
-        </NativeSelect>
-      </Field>
+      {projects.length > 0 ? (
+        <Field label="কোন প্রকল্পের?" htmlFor="projectId" hint={inProject ? undefined : "প্রকল্পের (যেমন গরু) খরচ/আয় হলে প্রকল্প বাছুন। না হলে সমিতির সাধারণ হিসাবে যাবে।"}>
+          <NativeSelect
+            id="projectId"
+            name="projectId"
+            value={projectId}
+            onChange={(e) => {
+              setProjectId(e.target.value)
+              // Inside a project only purchase / cost / income make sense.
+              if (e.target.value && !TYPE_TO_KIND[type as keyof typeof TYPE_TO_KIND]) setType("expense")
+            }}
+          >
+            <option value="">— সাধারণ হিসাব (কোনো প্রকল্প নয়) —</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+      ) : null}
+
+      {inProject && kind ? (
+        <>
+          <div className="space-y-2">
+            <p className="text-base font-medium">কী ধরনের?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(Object.keys(KIND_LABELS) as ProjectEntryKind[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => {
+                    setType(KIND_TO_TYPE[k])
+                    setCategory("")
+                  }}
+                  aria-pressed={kind === k}
+                  className={cn(
+                    "min-h-12 rounded-xl border-2 px-1 text-sm leading-tight",
+                    kind === k ? "border-brand-navy bg-brand-navy font-semibold text-white" : "bg-white",
+                  )}
+                >
+                  {KIND_LABELS[k]}
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="type" value={type} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-base font-medium">খাত</p>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORY_PRESETS[kind].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  aria-pressed={category === c}
+                  className={cn("min-h-10 rounded-full border px-3 text-sm", category === c ? "border-brand-navy bg-secondary font-semibold text-brand-navy" : "bg-white")}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <Input name="category" value={category} onChange={(e) => setCategory(e.target.value)} maxLength={60} placeholder="অথবা নিজে লিখুন" aria-label="খাত" />
+          </div>
+        </>
+      ) : (
+        <Field label="ধরন" htmlFor="type">
+          <NativeSelect id="type" name="type" value={type} onChange={(e) => setType(e.target.value)}>
+            {Object.entries(TXN_TYPE_LABELS).map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Field label="টাকা" htmlFor="amount">
           <Input
@@ -107,12 +202,14 @@ export function TransactionForm({
           />
         </Field>
         <Field label="তারিখ" htmlFor="date">
-          <Input id="date" name="date" type="date" defaultValue={today} max={today} required />
+          <Input id="date" name="date" type="date" defaultValue={today} min={project?.startedOn} max={today} required />
         </Field>
       </div>
       {isInvestment ? (
         <div className="space-y-3 rounded-xl border border-brand-navy/30 bg-secondary/50 p-3">
           <InvestmentImpact {...fund} amount={parseAmount(amount)} />
+          {inProject ? null : (
+          <>
           <Field label="কোন প্রস্তাবের ভিত্তিতে?" htmlFor="proposalId" hint="নিয়ম অনুযায়ী বিনিয়োগের আগে সদস্যদের ভোটে প্রস্তাব পাস হতে হয়।">
             <NativeSelect id="proposalId" name="proposalId" defaultValue="">
               <option value="">— প্রস্তাব ছাড়া —</option>
@@ -125,6 +222,8 @@ export function TransactionForm({
             </NativeSelect>
           </Field>
           {proposals.length === 0 ? <p className="text-sm text-amber-900">এখনো কোনো পাস হওয়া প্রস্তাব নেই।</p> : null}
+          </>
+          )}
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" name="acceptRuleBreak" className="mt-1 size-5" />
             <span>৭০/৩০ নিয়মের বাইরে গেলেও (নগদ ৩০%-এর নিচে) জেনে-বুঝে সংরক্ষণ করছি</span>
@@ -155,7 +254,13 @@ export function TransactionForm({
         ) : null}
       </div>
       <Field label="বিবরণ" htmlFor="description">
-        <Textarea id="description" name="description" rows={2} required placeholder="কী বাবদ, কাকে দেওয়া হয়েছে" />
+        <Textarea
+          id="description"
+          name="description"
+          rows={2}
+          required
+          placeholder={inProject ? "যেমন: ২ বস্তা ভুসি, হাট থেকে কেনা" : "কী বাবদ, কাকে দেওয়া হয়েছে"}
+        />
       </Field>
 
       <div className="space-y-2">

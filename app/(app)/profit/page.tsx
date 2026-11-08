@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Fragment } from "react"
 import { desc } from "drizzle-orm"
 import { PageTitle } from "@/components/layout/page-title"
 import { getViewer } from "@/lib/auth/session"
@@ -60,10 +61,24 @@ export default async function ProfitPage({ searchParams }: PageProps<"/profit">)
             <p className="rounded-lg bg-amber-50 p-2 text-sm text-amber-900">এই বছর এখনো শেষ হয়নি — এটি আজ পর্যন্ত হিসাবের একটি আনুমানিক চিত্র।</p>
           ) : null}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-base">
-            <dt className="text-muted-foreground">আয় (ব্যবসা + ব্যাংক)</dt>
+            <dt className="text-muted-foreground">আয় (ব্যবসা + ব্যাংক, প্রকল্প ছাড়া)</dt>
             <dd className="text-right">{taka(preview.income)}</dd>
             <dt className="text-muted-foreground">খরচ</dt>
             <dd className="text-right">− {taka(preview.expense)}</dd>
+            {preview.projects.map((p) => (
+              <Fragment key={p.id}>
+                <dt className="text-muted-foreground">
+                  <Link href={`/projects/${p.id}`} className="underline">
+                    প্রকল্প: {p.name}
+                  </Link>{" "}
+                  ({p.result < 0 ? "ক্ষতি" : "লাভ"})
+                </dt>
+                <dd className={cn("text-right", p.result < 0 && "text-destructive")}>
+                  {p.result < 0 ? "− " : "+ "}
+                  {taka(Math.abs(p.result))}
+                </dd>
+              </Fragment>
+            ))}
             <dt className="font-semibold">মুনাফা</dt>
             <dd className={cn("text-right font-semibold", preview.profit < 0 && "text-destructive")}>{taka(preview.profit)}</dd>
             <dt className="text-muted-foreground">সংরক্ষিত তহবিলে</dt>

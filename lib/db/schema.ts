@@ -182,6 +182,10 @@ export const transactions = pgTable(
     // Paid from / received into the bank (default) or an admin's cash in hand (then cash_holder_id says whose).
     via: txnViaEnum("via").notNull().default("bank"),
     cashHolderId: integer("cash_holder_id").references(() => members.id),
+    // The project (e.g. a cow) this money belongs to; null = the samiti's general accounts.
+    projectId: integer("project_id").references(() => projects.id),
+    // Free-text heading inside a project, e.g. "খাবার", "ওষুধ", "বিক্রি" (presets in lib/projects.ts).
+    category: text("category"),
     status: recordStatusEnum("status").notNull().default("valid"),
     voidReason: text("void_reason"),
     voidedBy: integer("voided_by").references(() => members.id),
@@ -191,11 +195,59 @@ export const transactions = pgTable(
   (t) => [
     check("transactions_amount_positive", sql`${t.amount} > 0`),
     check("transactions_cash_has_holder", sql`${t.via} = 'bank' OR ${t.cashHolderId} IS NOT NULL`),
+    // Inside a project only: purchase/capital (investment), costs (expense), income (business_income).
+    check("transactions_project_types", sql`${t.projectId} IS NULL OR ${t.type} IN ('investment', 'expense', 'business_income')`),
     check(
       "transactions_void_has_reason",
       sql`${t.status} = 'valid' OR (${t.voidReason} IS NOT NULL AND length(trim(${t.voidReason})) > 0 AND ${t.voidedAt} IS NOT NULL)`,
     ),
     index("transactions_date_idx").on(t.date),
+    index("transactions_project_idx").on(t.projectId),
+  ],
+)
+
+// ── Projects (investments with their own accounts, e.g. a cow) ──────────────
+// Every cost and income of a project is a transaction with project_id set. While a project is
+// open, the money spent on it counts as "invested"; when it is closed, its profit or loss
+// (income − purchase − costs) counts in the samiti year of the closing date.
+export const projects = pgTable(
+  "projects",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    proposalId: integer("proposal_id").references(() => proposals.id),
+    budget: integer("budget"),
+    startedOn: date("started_on", { mode: "string" }).notNull(),
+    createdBy: integer("created_by").references(() => members.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("projects_name_not_blank", sql`length(trim(${t.name})) > 0`),
+    check("projects_budget_positive", sql`${t.budget} IS NULL OR ${t.budget} > 0`),
+  ],
+)
+
+// Close / reopen history of a project (insert-only). The latest row is the project's state.
+export const projectEvents = pgTable(
+  "project_events",
+  {
+    id: serial("id").primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => projects.id),
+    kind: text("kind", { enum: ["close", "reopen"] }).notNull(),
+    // For "close": the date the project ended (sale date) — decides which year its profit counts in.
+    eventDate: date("event_date", { mode: "string" }).notNull(),
+    reason: text("reason"),
+    byId: integer("by_id")
+      .notNull()
+      .references(() => members.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("project_events_project_idx").on(t.projectId, t.id),
+    check("project_reopen_has_reason", sql`${t.kind} = 'close' OR (${t.reason} IS NOT NULL AND length(trim(${t.reason})) > 0)`),
   ],
 )
 
@@ -451,6 +503,7 @@ export const profitDistributions = pgTable(
 export type Member = typeof members.$inferSelect
 export type Payment = typeof payments.$inferSelect
 export type Transaction = typeof transactions.$inferSelect
+export type Project = typeof projects.$inferSelect
 export type ShareHistoryRow = typeof shareHistory.$inferSelect
 export type Settings = typeof settings.$inferSelect
 export type AuditEntry = typeof auditLog.$inferSelect

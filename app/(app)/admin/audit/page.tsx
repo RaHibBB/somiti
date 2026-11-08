@@ -42,6 +42,9 @@ const ACTION_LABELS: Record<string, string> = {
   notice_restore: "নোটিশ ফেরানো",
   profit_distribution_create: "মুনাফা বণ্টন সংরক্ষণ",
   profit_distribution_void: "মুনাফা বণ্টন বাতিল",
+  project_create: "নতুন প্রকল্প",
+  project_close: "প্রকল্প শেষ",
+  project_reopen: "প্রকল্প আবার খোলা",
 }
 
 export default async function AuditPage({ searchParams }: PageProps<"/admin/audit">) {

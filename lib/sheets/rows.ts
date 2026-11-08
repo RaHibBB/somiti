@@ -22,7 +22,7 @@ export const HEADERS: Record<TabName, string[]> = {
   // No phone numbers: the mirror may be shared with every member, and phones are admin-only in the app.
   Members: ["ID", "সদস্য নং", "নাম", "ভূমিকা", "অবস্থা", "শেয়ার (বর্তমান)", "যোগদান", "মোট দেয়", "মোট জমা", "বকেয়া", "নমিনি", "আপডেট"],
   Payments: ["ID", "রসিদ", "সদস্য নং", "সদস্য", "কোন মাসের", "টাকা", "জমার তারিখ", "মাধ্যম", "ট্রানজেকশন আইডি", "নোট", "অবস্থা", "বাতিলের কারণ", "এন্ট্রির সময়"],
-  Transactions: ["ID", "তারিখ", "ধরন", "বিবরণ", "টাকা", "অনুমোদন", "সভার তারিখ", "ভোটের ফল", "রসিদের ছবি", "অবস্থা", "বাতিলের কারণ", "এন্ট্রির সময়"],
+  Transactions: ["ID", "তারিখ", "ধরন", "বিবরণ", "টাকা", "অনুমোদন", "সভার তারিখ", "ভোটের ফল", "রসিদের ছবি", "অবস্থা", "বাতিলের কারণ", "এন্ট্রির সময়", "প্রকল্প", "খাত"],
   "Monthly Summary": ["মাস", "মোট দেয়", "মোট জমা", "বাকি", "পরিশোধিত সদস্য", "আংশিক", "বকেয়া সদস্য"],
 }
 
@@ -73,7 +73,7 @@ export function paymentRows(snap: SamitiSnapshot, ids?: Set<number>): Row[] {
     .map(({ p, m }) => paymentRow(p, m.member.memberNo, m.member.nameBn))
 }
 
-export function transactionRow(t: Transaction): Row {
+export function transactionRow(t: Transaction, projectName?: string): Row {
   return [
     t.id,
     formatDate(t.date),
@@ -87,6 +87,8 @@ export function transactionRow(t: Transaction): Row {
     statusText(t.status),
     t.voidReason ?? "",
     formatDateTime(t.createdAt),
+    t.projectId ? (projectName ?? `#${t.projectId}`) : "",
+    t.category ?? "",
   ]
 }
 

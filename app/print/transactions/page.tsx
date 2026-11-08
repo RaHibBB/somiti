@@ -1,6 +1,6 @@
 import { PrintDoc } from "@/components/print/print-doc"
 import { getViewer } from "@/lib/auth/session"
-import { loadFund, loadTransactions } from "@/lib/data"
+import { loadFund, loadProjects, loadTransactions } from "@/lib/data"
 import { formatDate, taka, TXN_TYPE_LABELS } from "@/lib/format"
 import type { TxnType } from "@/lib/ledger"
 
@@ -8,7 +8,8 @@ export const metadata = { title: "আয়-ব্যয় ও বিনিয�
 
 export default async function PrintTransactionsPage() {
   await getViewer()
-  const [rows, fund] = await Promise.all([loadTransactions(), loadFund()])
+  const [rows, fund, projectList] = await Promise.all([loadTransactions(), loadFund(), loadProjects()])
+  const projectName = new Map(projectList.map((p) => [p.id, p.name]))
   const ordered = [...rows].reverse() // oldest first on paper
 
   return (
@@ -62,6 +63,7 @@ export default async function PrintTransactionsPage() {
               <td>{formatDate(t.date)}</td>
               <td>{TXN_TYPE_LABELS[t.type]}</td>
               <td>
+                {t.projectId ? `[প্রকল্প: ${projectName.get(t.projectId) ?? t.projectId}${t.category ? ` · ${t.category}` : ""}] ` : ""}
                 {t.description}
                 {t.status === "void" ? ` (বাতিল — ${t.voidReason})` : ""}
               </td>

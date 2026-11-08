@@ -3,9 +3,11 @@ import type { DB } from "@/lib/db"
 import { members, proposals, transactions, type Transaction } from "@/lib/db/schema"
 import { writeAudit } from "@/lib/audit"
 import { enqueueSheet } from "@/lib/outbox"
-import { todayDhaka } from "@/lib/format"
+import { formatDate, todayDhaka } from "@/lib/format"
 import { UserError } from "./errors"
 import { assertMonthOpen } from "./month-close"
+import { assertProjectOpen } from "./projects"
+import { PROJECT_TXN_TYPES } from "@/lib/projects"
 
 export type TransactionInput = {
   date: string
@@ -20,12 +22,20 @@ export type TransactionInput = {
   /** "bank" (default) or "cash" — cash means an admin's own hand, named by cashHolderId. */
   via?: "bank" | "cash"
   cashHolderId?: number | null
+  /** The project this belongs to (only purchase / cost / income types); null = general accounts. */
+  projectId?: number | null
+  /** Heading inside a project, e.g. "খাবার". */
+  category?: string | null
 }
 
 export async function createTransaction(db: DB, actorId: number, input: TransactionInput, today = todayDhaka()): Promise<Transaction> {
   if (!Number.isInteger(input.amount) || input.amount <= 0) throw new UserError("টাকার পরিমাণ সঠিক নয়।")
   if (!input.description.trim()) throw new UserError("বিবরণ লিখুন।")
   if (input.date > today) throw new UserError("তারিখ ভবিষ্যতের হতে পারে না।")
+  if (input.projectId && !PROJECT_TXN_TYPES.includes(input.type)) {
+    throw new UserError("প্রকল্পে শুধু কেনা/মূলধন, খরচ আর আয়/বিক্রি লেখা যায়।")
+  }
+  const category = input.category?.trim().slice(0, 60) || null
   if (input.proposalId) {
     const [p] = await db.select().from(proposals).where(eq(proposals.id, input.proposalId))
     if (!p) throw new UserError("প্রস্তাব পাওয়া যায়নি।")
@@ -41,9 +51,16 @@ export async function createTransaction(db: DB, actorId: number, input: Transact
   }
   await assertMonthOpen(db, input.date)
   return db.transaction(async (tx) => {
+    let proposalId = input.proposalId ?? null
+    if (input.projectId) {
+      // Locks the project row: an entry can't land in a project that is being closed.
+      const p = await assertProjectOpen(tx, input.projectId)
+      if (input.date < p.startedOn) throw new UserError(`তারিখ প্রকল্প শুরুর (${formatDate(p.startedOn)}) আগে হতে পারে না।`)
+      proposalId ??= p.proposalId
+    }
     const [row] = await tx
       .insert(transactions)
-      .values({ ...input, via, cashHolderId, description: input.description.trim(), createdBy: actorId })
+      .values({ ...input, proposalId, projectId: input.projectId ?? null, category, via, cashHolderId, description: input.description.trim(), createdBy: actorId })
       .returning()
     await writeAudit(tx, { actorId, action: "transaction_create", table: "transactions", rowId: row.id, after: row })
     await enqueueSheet(tx, "transaction", row.id)

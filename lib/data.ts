@@ -4,7 +4,22 @@ import { asc, desc, eq } from "drizzle-orm"
 import { cache } from "react"
 import type { DB } from "@/lib/db"
 import { getDb } from "@/lib/db"
-import { members, notices, paymentDateFixes, paymentReceivers, payments, settings, shareHistory, transactions, type Member } from "@/lib/db/schema"
+import {
+  members,
+  notices,
+  paymentDateFixes,
+  paymentReceivers,
+  payments,
+  projectEvents,
+  projects,
+  settings,
+  shareHistory,
+  transactions,
+  type Member,
+  type Project,
+  type Transaction,
+} from "@/lib/db/schema"
+import { projectStates, projectTotals, type ProjectTotals } from "@/lib/projects"
 import { todayDhaka } from "@/lib/format"
 import {
   dueForMember,
@@ -105,13 +120,46 @@ export async function loadSnapshot(db: DB = getDb(), today = todayDhaka()): Prom
 export const getSnapshot = cache(() => loadSnapshot())
 
 export async function loadFund(db: DB = getDb()) {
-  const [pays, txns, s] = await Promise.all([
+  const [pays, txns, s, events] = await Promise.all([
     db.select({ amount: payments.amount, status: payments.status }).from(payments),
-    db.select({ type: transactions.type, amount: transactions.amount, status: transactions.status }).from(transactions),
+    db.select({ type: transactions.type, amount: transactions.amount, status: transactions.status, projectId: transactions.projectId }).from(transactions),
     loadSettings(db),
+    loadProjectEvents(db),
   ])
   const dues = pays.reduce((sum, p) => (p.status === "valid" ? sum + p.amount : sum), 0)
-  return fundSummary(dues, txns, s.maxInvestPct)
+  const closed = new Set([...projectStates(events)].filter(([, st]) => st.closed).map(([id]) => id))
+  return fundSummary(dues, txns, s.maxInvestPct, closed)
+}
+
+export function loadProjectEvents(db: DB = getDb()) {
+  return db
+    .select({ id: projectEvents.id, projectId: projectEvents.projectId, kind: projectEvents.kind, eventDate: projectEvents.eventDate })
+    .from(projectEvents)
+    .orderBy(asc(projectEvents.id))
+}
+
+export type ProjectView = Project & {
+  closed: boolean
+  closedOn: string | null
+  totals: ProjectTotals
+  entries: Transaction[]
+}
+
+/** Every project with its state, totals and entries (newest entries first). Open projects come first. */
+export async function loadProjects(db: DB = getDb()): Promise<ProjectView[]> {
+  const [rows, events, txns] = await Promise.all([
+    db.select().from(projects).orderBy(desc(projects.startedOn), desc(projects.id)),
+    loadProjectEvents(db),
+    db.select().from(transactions).orderBy(desc(transactions.date), desc(transactions.id)),
+  ])
+  const states = projectStates(events)
+  return rows
+    .map((p) => {
+      const entries = txns.filter((t) => t.projectId === p.id)
+      const st = states.get(p.id) ?? { closed: false, closedOn: null }
+      return { ...p, ...st, totals: projectTotals(entries), entries }
+    })
+    .sort((a, b) => Number(a.closed) - Number(b.closed))
 }
 
 export async function loadLatestNotices(limit = 3, db: DB = getDb()) {

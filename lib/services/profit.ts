@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm"
 import type { DB } from "@/lib/db"
 import { auditLog, profitDistributions, transactions } from "@/lib/db/schema"
-import { loadSnapshot, loadTransactions } from "@/lib/data"
+import { loadProjects, loadSnapshot, loadTransactions } from "@/lib/data"
 import { monthLabel, todayDhaka } from "@/lib/format"
 import { enqueueSheet } from "@/lib/outbox"
 import { computeDistribution, samitiYear, type ProfitResult } from "@/lib/profit"
@@ -10,17 +10,23 @@ import { isUniqueViolation, UserError } from "./errors"
 export type DistributionDetails = Pick<
   ProfitResult,
   "income" | "expense" | "reservePct" | "roundingToReserve" | "totalShareMonths" | "lines"
-> & { dividendTransactionId: number | null }
+> & {
+  dividendTransactionId: number | null
+  /** Saved from Nov 2026 on; older rows don't have them. */
+  projectProfit?: number
+  projects?: ProfitResult["projects"]
+}
 
 /** Calculate (not save) the distribution for the n-th samiti year, from current data. */
 export async function previewDistribution(db: DB, yearIndex: number): Promise<ProfitResult> {
-  const [snap, txns] = await Promise.all([loadSnapshot(db, todayDhaka()), loadTransactions(db)])
+  const [snap, txns, projectList] = await Promise.all([loadSnapshot(db, todayDhaka()), loadTransactions(db), loadProjects(db)])
   const { periodStart, periodEnd } = samitiYear(snap.settings.startMonth, yearIndex)
   return computeDistribution({
     periodStart,
     periodEnd,
     reservePct: snap.settings.reservePct,
-    txns: txns.map((t) => ({ date: t.date, type: t.type, amount: t.amount, status: t.status })),
+    txns: txns.map((t) => ({ date: t.date, type: t.type, amount: t.amount, status: t.status, projectId: t.projectId })),
+    projects: projectList.map((p) => ({ id: p.id, name: p.name, closedOn: p.closedOn })),
     members: snap.members.map((m) => ({
       id: m.member.id,
       memberNo: m.member.memberNo,
@@ -97,6 +103,8 @@ async function insertDistribution(
       totalShareMonths: r.totalShareMonths,
       lines: r.lines,
       dividendTransactionId,
+      projectProfit: r.projectProfit,
+      projects: r.projects,
     }
     const [row] = await tx
       .insert(profitDistributions)

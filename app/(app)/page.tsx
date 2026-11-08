@@ -338,6 +338,16 @@ export default async function DashboardPage() {
           <dd className="text-right">{taka(fund.income)}</dd>
           <dt className="text-muted-foreground">খরচ ও অন্যান্য</dt>
           <dd className="text-right">{taka(fund.byType.expense + fund.byType.member_refund + fund.byType.dividend)}</dd>
+          {fund.inProjects > 0 ? (
+            <>
+              <dt className="text-muted-foreground">
+                <Link href="/projects" className="underline">
+                  চলমান প্রকল্পে
+                </Link>
+              </dt>
+              <dd className="text-right">{taka(fund.inProjects)}</dd>
+            </>
+          ) : null}
         </dl>
         <Link href="/transactions" className="flex h-10 items-center justify-center gap-1 text-base text-brand-navy">
           আয়-ব্যয় দেখুন <ChevronRight className="size-5" />

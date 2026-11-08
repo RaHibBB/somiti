@@ -2,12 +2,15 @@
 //
 // profit       = business income + bank profit − expenses, dated inside the period
 //                (investment_return is principal coming back, not profit — see DECISIONS.md)
+//                + the result of every project CLOSED inside the period (income − purchase − costs).
+//                Project entries never count on their own: an open project's money is "invested".
 // reserve      = reserve_pct (50%) of profit, plus any taka left over from rounding
 // distributed  = the rest, split by share ratio among members active at calculation time.
 //                Share ratio uses share-months (Σ shares held in each month of the period),
 //                so a member who changed shares mid-year is weighted fairly.
 
 import { addMonths, monthDiff, sharesForMonth, type ShareRow, type TxnRow } from "@/lib/ledger"
+import { projectTotals } from "@/lib/projects"
 
 export type ProfitMember = {
   id: number
@@ -24,6 +27,9 @@ export type ProfitResult = {
   periodEnd: string // last month "YYYY-MM-01" (inclusive)
   income: number
   expense: number
+  /** Sum of the results of projects closed in this period (negative = loss). */
+  projectProfit: number
+  projects: ProfitProject[]
   profit: number
   reservePct: number
   reserveAmount: number
@@ -34,6 +40,10 @@ export type ProfitResult = {
 }
 
 export type DatedTxn = TxnRow & { date: string }
+
+/** A project as the profit calculation sees it: its closing date decides the year. */
+export type ProjectForProfit = { id: number; name: string; closedOn: string | null }
+export type ProfitProject = { id: number; name: string; closedOn: string; result: number }
 
 /** The n-th samiti year (0-based) starting at start_month, e.g. Oct 2026 – Sep 2027. */
 export function samitiYear(startMonth: string, index: number): { periodStart: string; periodEnd: string } {
@@ -47,14 +57,20 @@ export function computeDistribution(input: {
   txns: DatedTxn[]
   members: ProfitMember[]
   reservePct: number
+  projects?: ProjectForProfit[]
 }): ProfitResult {
   const { periodStart, periodEnd, reservePct } = input
   const lastDay = addMonths(periodEnd, 1) // exclusive upper bound
-  const inPeriod = input.txns.filter((t) => t.status === "valid" && t.date >= periodStart && t.date < lastDay)
+  const inPeriod = input.txns.filter((t) => t.status === "valid" && !t.projectId && t.date >= periodStart && t.date < lastDay)
   const sum = (types: string[]) => inPeriod.filter((t) => types.includes(t.type)).reduce((s, t) => s + t.amount, 0)
   const income = sum(["business_income", "bank_profit"])
   const expense = sum(["expense"])
-  const profit = income - expense
+  // Projects closed inside the period: their whole result, whenever the entries were made.
+  const projects: ProfitProject[] = (input.projects ?? [])
+    .filter((p): p is ProjectForProfit & { closedOn: string } => p.closedOn !== null && p.closedOn >= periodStart && p.closedOn < lastDay)
+    .map((p) => ({ id: p.id, name: p.name, closedOn: p.closedOn, result: projectTotals(input.txns.filter((t) => t.projectId === p.id)).result }))
+  const projectProfit = projects.reduce((s, p) => s + p.result, 0)
+  const profit = income - expense + projectProfit
 
   const months = Array.from({ length: monthDiff(periodStart, periodEnd) + 1 }, (_, i) => addMonths(periodStart, i))
   const eligible = input.members
@@ -69,6 +85,8 @@ export function computeDistribution(input: {
       periodEnd,
       income,
       expense,
+      projectProfit,
+      projects,
       profit,
       reservePct,
       reserveAmount: Math.max(0, profit),
@@ -94,6 +112,8 @@ export function computeDistribution(input: {
     periodEnd,
     income,
     expense,
+    projectProfit,
+    projects,
     profit,
     reservePct,
     reserveAmount: profit - distributedAmount,

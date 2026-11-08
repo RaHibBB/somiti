@@ -2,6 +2,8 @@
 // (Asia/Dhaka "YYYY-MM-DD", see todayDhaka()). Months are "YYYY-MM-01" strings.
 // All amounts are integer taka.
 
+import { tiedInOpenProjects } from "@/lib/projects"
+
 export type LedgerSettings = {
   sharePrice: number
   startMonth: string // "2026-10-01"
@@ -19,7 +21,8 @@ export type TxnType =
   | "bank_profit"
   | "member_refund"
   | "dividend"
-export type TxnRow = { type: TxnType; amount: number; status: "valid" | "void" }
+/** projectId: set when the money belongs to a project (see lib/projects.ts). */
+export type TxnRow = { type: TxnType; amount: number; status: "valid" | "void"; projectId?: number | null }
 
 export type MonthStatus = "paid" | "partial" | "unpaid" | "not_yet_due"
 
@@ -175,8 +178,13 @@ export type FundSummary = {
   byType: Record<TxnType, number>
   /** Spec §6 "Fund": money on hand (dues + income − outflows). */
   cash: number
-  /** investment − investment_return (never negative). */
+  /**
+   * Money working outside the cash box: general investments (investment − investment_return,
+   * never negative) plus whatever is tied up in open projects (spent − earned so far).
+   */
   invested: number
+  /** The open-project part of `invested`. */
+  inProjects: number
   /** cash + invested: everything the samiti owns. */
   total: number
   /** cash as % of total (0–100, rounded down); 100 when total is 0. */
@@ -185,7 +193,7 @@ export type FundSummary = {
   cashBelowMinimum: boolean
 }
 
-export function fundSummary(validDuesTotal: number, txns: TxnRow[], maxInvestPct = 70): FundSummary {
+export function fundSummary(validDuesTotal: number, txns: TxnRow[], maxInvestPct = 70, closedProjectIds: Set<number> = new Set()): FundSummary {
   const byType: Record<TxnType, number> = {
     expense: 0,
     investment: 0,
@@ -199,7 +207,10 @@ export function fundSummary(validDuesTotal: number, txns: TxnRow[], maxInvestPct
   const income = byType.business_income + byType.investment_return + byType.bank_profit
   const outflow = byType.expense + byType.investment + byType.member_refund + byType.dividend
   const cash = validDuesTotal + income - outflow
-  const invested = Math.max(0, byType.investment - byType.investment_return)
+  // General (non-project) investments are tracked as before; project money is counted per project.
+  const generalInvestment = txns.reduce((s, t) => (t.status === "valid" && t.type === "investment" && !t.projectId ? s + t.amount : s), 0)
+  const inProjects = tiedInOpenProjects(txns, closedProjectIds)
+  const invested = Math.max(0, generalInvestment - byType.investment_return) + inProjects
   const total = cash + invested
   const cashPct = total > 0 ? Math.floor((Math.max(0, cash) * 100) / total) : 100
   const minCashPct = 100 - maxInvestPct
@@ -210,6 +221,7 @@ export function fundSummary(validDuesTotal: number, txns: TxnRow[], maxInvestPct
     byType,
     cash,
     invested,
+    inProjects,
     total,
     cashPct,
     minCashPct,

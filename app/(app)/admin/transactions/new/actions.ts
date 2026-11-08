@@ -26,6 +26,12 @@ const schema = z.object({
     .transform((s) => (s ? Number(s) : null))
     .pipe(z.number().int().positive().nullable()),
   via: z.enum(["bank", "cash"]).default("bank"),
+  projectId: z
+    .string()
+    .optional()
+    .transform((s) => (s ? Number(s) : null))
+    .pipe(z.number().int().positive().nullable()),
+  category: optText(60),
   cashHolderId: z
     .string()
     .optional()
@@ -37,11 +43,12 @@ const schema = z.object({
     .transform((s) => s === "on"),
 })
 
-export async function createTransactionAction(_: ActionResult<{ id: number }> | undefined, fd: FormData) {
+export async function createTransactionAction(_: ActionResult<{ id: number; projectId: number | null }> | undefined, fd: FormData) {
   return adminAction(async (admin) => {
     const { acceptRuleBreak, ...input } = schema.parse(formObject(fd))
     // 70/30 rule: warn, and require an explicit acknowledgement to go below the cash minimum.
-    if (input.type === "investment") {
+    // Money put into a project (purchase or cost) leaves the cash box just like an investment.
+    if (input.type === "investment" || (input.projectId && input.type === "expense")) {
       const fund = await loadFund()
       const after = cashPctAfterInvestment(fund.cash, fund.invested, input.amount)
       if ((after < fund.minCashPct || input.amount > fund.cash) && !acceptRuleBreak) {
@@ -52,6 +59,6 @@ export async function createTransactionAction(_: ActionResult<{ id: number }> | 
     const receiptUrl = photo instanceof File && photo.size > 0 ? await uploadReceipt(photo) : null
     const row = await createTransaction(getDb(), admin.id, { ...input, receiptUrl })
     revalidatePath("/", "layout")
-    return { id: row.id }
+    return { id: row.id, projectId: row.projectId }
   })
 }

@@ -6,6 +6,7 @@ import { enqueueSheet } from "@/lib/outbox"
 import { UserError } from "./errors"
 import { assertMonthOpen } from "./month-close"
 import { effectivePaidOn } from "./payments"
+import { assertProjectOpen } from "./projects"
 
 function checkReason(reason: string) {
   const r = reason.trim()
@@ -38,6 +39,8 @@ export async function voidTransaction(db: DB, actorId: number, txnId: number, re
     if (!before) throw new UserError("লেনদেন পাওয়া যায়নি।")
     if (before.status === "void") throw new UserError("এই লেনদেন আগেই বাতিল করা হয়েছে।")
     await assertMonthOpen(tx, before.date)
+    // A closed project's result is final; reopen it (with a reason) to change its entries.
+    if (before.projectId) await assertProjectOpen(tx, before.projectId)
     const [after] = await tx
       .update(transactions)
       .set({ status: "void", voidReason, voidedBy: actorId, voidedAt: new Date() })

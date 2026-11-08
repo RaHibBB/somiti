@@ -5,7 +5,7 @@
 import { and, asc, eq, inArray, lt, or, sql } from "drizzle-orm"
 import type { DB } from "@/lib/db"
 import { getDb } from "@/lib/db"
-import { sheetOutbox, transactions } from "@/lib/db/schema"
+import { projects, sheetOutbox, transactions } from "@/lib/db/schema"
 import { loadSnapshot, loadTransactions } from "@/lib/data"
 import { memberRows, paymentRows, summaryRows, TABS, transactionRow, type Row, type TabName } from "./rows"
 
@@ -93,7 +93,8 @@ async function pushBatch(db: DB, target: SheetTarget, batch: { kind: string; pay
   if (paymentIds.size) await target.upsertRows(TABS.payments, paymentRows(snap, paymentIds))
   if (txnIds.size) {
     const rows = await db.select().from(transactions).where(inArray(transactions.id, [...txnIds])).orderBy(asc(transactions.id))
-    await target.upsertRows(TABS.transactions, rows.map(transactionRow))
+    const names = await projectNames(db)
+    await target.upsertRows(TABS.transactions, rows.map((t) => transactionRow(t, names.get(t.projectId ?? 0))))
   }
   // Small (one row per month) — always rebuilt.
   await target.rewriteTab(TABS.summary, summaryRows(snap))
@@ -115,7 +116,8 @@ async function rewriteAll(db: DB, target: SheetTarget) {
   const [snap, txns] = await Promise.all([loadSnapshot(db), loadTransactions(db)])
   await target.rewriteTab(TABS.members, memberRows(snap))
   await target.rewriteTab(TABS.payments, paymentRows(snap))
-  await target.rewriteTab(TABS.transactions, [...txns].sort((a, b) => a.id - b.id).map(transactionRow))
+  const names = await projectNames(db)
+  await target.rewriteTab(TABS.transactions, [...txns].sort((a, b) => a.id - b.id).map((t) => transactionRow(t, names.get(t.projectId ?? 0))))
   await target.rewriteTab(TABS.summary, summaryRows(snap))
   // Everything queued before the rewrite started is now reflected.
   await db
@@ -129,4 +131,9 @@ export async function flushSheetOutbox(): Promise<FlushResult> {
   const target = await googleTarget()
   if (!target) return { pushed: 0, failed: 0, skipped: "not_configured" }
   return flushOutbox(getDb(), target)
+}
+
+async function projectNames(db: DB): Promise<Map<number, string>> {
+  const rows = await db.select({ id: projects.id, name: projects.name }).from(projects)
+  return new Map(rows.map((r) => [r.id, r.name]))
 }

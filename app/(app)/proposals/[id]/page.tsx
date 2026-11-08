@@ -106,6 +106,11 @@ export default async function ProposalPage({ params }: PageProps<"/proposals/[id
             মোট সক্রিয় সদস্য {toBn(final.activeMembers)} জন · ভোট দিয়েছেন {toBn(final.voted)} জন (দরকার ছিল {toBn(final.quorum)})
           </p>
           <p className="rounded-lg bg-secondary p-3 text-base">{OUTCOME_TEXT[final.outcome]}</p>
+          {adminUi && p.status === "passed" ? (
+            <Link href={`/admin/projects/new?proposal=${p.id}`} className="flex h-12 items-center justify-center rounded-xl bg-primary text-base font-semibold text-white">
+              এই প্রস্তাবে প্রকল্প খুলুন
+            </Link>
+          ) : null}
           {mine ? <p className="text-sm text-muted-foreground">আপনার ভোট: {mine.choice === "yes" ? "হ্যাঁ" : "না"}</p> : null}
         </section>
       ) : null}

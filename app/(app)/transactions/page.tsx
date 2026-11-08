@@ -3,7 +3,7 @@ import { FileDown, ImageIcon, Plus } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
-import { loadFund, loadTransactions } from "@/lib/data"
+import { loadFund, loadProjects, loadTransactions } from "@/lib/data"
 import { formatDate, taka, TXN_TYPE_LABELS } from "@/lib/format"
 import type { TxnType } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,8 @@ const INFLOW: TxnType[] = ["business_income", "investment_return", "bank_profit"
 export default async function TransactionsPage() {
   const me = await getViewer()
   const adminUi = await showAdminUi(me)
-  const [rows, fund] = await Promise.all([loadTransactions(), loadFund()])
+  const [rows, fund, projectList] = await Promise.all([loadTransactions(), loadFund(), loadProjects()])
+  const projectName = new Map(projectList.map((p) => [p.id, p.name]))
   return (
     <div className="space-y-4">
       <PageTitle
@@ -78,6 +79,12 @@ export default async function TransactionsPage() {
                   </span>
                 </div>
                 <p className={cn("text-base", isVoid && "line-through")}>{t.description}</p>
+                {t.projectId ? (
+                  <Link href={`/projects/${t.projectId}`} className="mt-0.5 inline-block rounded-md bg-secondary px-2 py-0.5 text-xs text-brand-navy">
+                    প্রকল্প: {projectName.get(t.projectId) ?? `#${t.projectId}`}
+                    {t.category ? ` · ${t.category}` : ""}
+                  </Link>
+                ) : null}
                 {t.approvedBy || t.meetingDate ? (
                   <p className="text-xs text-muted-foreground">
                     {t.approvedBy ? `অনুমোদন: ${t.approvedBy}` : ""}
