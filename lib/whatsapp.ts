@@ -1,6 +1,6 @@
 // wa.me links with prefilled Bengali text — free, no API.
 import { formatDate, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
-import { PAY_LINE } from "@/lib/payment-info"
+import { payLine } from "@/lib/payment-info"
 
 export const SAMITI_NAME = "পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি"
 
@@ -52,14 +52,15 @@ export function receiptMessage(input: {
     .join("\n")
 }
 
-export function reminderMessage(input: { name: string; due: number; months: string[]; dueDay: number }): string {
+/** `pay` is where to send the money (see payLine); defaults to bKash only. */
+export function reminderMessage(input: { name: string; due: number; months: string[]; dueDay: number; pay?: string }): string {
   const monthText = input.months.map(monthLabel).join(", ")
   return [
     greeting(input.name),
     `একটু মনে করিয়ে দিচ্ছি — সমিতিতে আপনার ${toBn(input.months.length)} মাসের চাঁদা বকেয়া আছে (${monthText})।`,
     `মোট বকেয়া: ${taka(input.due)}`,
     `সুবিধামতো দ্রুত পরিশোধ করলে খুশি হব। প্রতি মাসের চাঁদা ${toBn(input.dueDay)} তারিখের মধ্যে দিতে হয়। কোনো সমস্যা থাকলে জানাবেন।`,
-    PAY_LINE,
+    input.pay ?? payLine(null),
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ].join("\n")
 }
@@ -139,12 +140,12 @@ export function accountSummaryMessage(input: {
 }
 
 /** Friendly nudge before the due date: this month's amount is still unpaid. */
-export function upcomingReminderMessage(input: { name: string; month: string; amount: number; dueDay: number }): string {
+export function upcomingReminderMessage(input: { name: string; month: string; amount: number; dueDay: number; pay?: string }): string {
   return [
     greeting(input.name),
     `একটু মনে করিয়ে দিচ্ছি — ${monthLabel(input.month)}-এর চাঁদা ${taka(input.amount)} এখনো জমা হয়নি।`,
     `সুবিধামতো ${toBn(input.dueDay)} তারিখের মধ্যে দিয়ে দিলে ভালো হয়।`,
-    PAY_LINE,
+    input.pay ?? payLine(null),
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ].join("\n")
 }

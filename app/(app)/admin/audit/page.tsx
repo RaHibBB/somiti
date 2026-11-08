@@ -34,7 +34,7 @@ const ACTION_LABELS: Record<string, string> = {
   proposal_close: "ভোট বন্ধ ও ফলাফল",
   vote_cast: "ভোট দেওয়া",
   invite_create: "লগইন তথ্য তৈরি (WhatsApp-এ পাঠানোর জন্য)",
-  report_submit: "সদস্য বিকাশ/নগদে জমা জানালেন",
+  report_submit: "সদস্য বিকাশ/ব্যাংকে জমা জানালেন",
   report_approve: "জানানো জমা অনুমোদন",
   report_reject: "জানানো জমা বাতিল",
   notice_create: "নতুন নোটিশ",

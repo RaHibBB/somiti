@@ -57,7 +57,7 @@ export const REPORT_NAV: NavItem[] = [
 /** Logged-in members. */
 export const MY_NAV: NavItem[] = [
   { href: "/me", label: "আমার হিসাব", icon: User },
-  { href: "/report", label: "বিকাশ/নগদে জমা জানান", short: "বিকাশ/নগদে জানান", icon: Smartphone },
+  { href: "/report", label: "টাকা দিন (বিকাশ / ব্যাংক)", short: "টাকা দিন", icon: Smartphone },
   { href: "/settings/pin", label: "পাসওয়ার্ড ও ইমেইল", icon: KeyRound },
 ]
 
@@ -66,7 +66,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/month", label: "মাসের কাজ ও মাস বন্ধ", short: "মাসের কাজ", icon: CalendarCheck },
   { href: "/admin/pay", label: "জমা নিন", icon: HandCoins },
   { href: "/admin/pay/bulk", label: "একসাথে অনেকের জমা (সভার দিন)", short: "একসাথে জমা", icon: Users },
-  { href: "/admin/reports", label: "বিকাশ/নগদের জানানো জমা যাচাই", short: "জানানো জমা যাচাই", icon: Smartphone },
+  { href: "/admin/reports", label: "বিকাশ/ব্যাংকের জানানো জমা যাচাই", short: "জানানো জমা যাচাই", icon: Smartphone },
   { href: "/admin/dues", label: "বকেয়া ও বাকি", icon: ShieldAlert },
   { href: "/admin/holdings", label: "কার কাছে কত টাকা", icon: Wallet },
   { href: "/admin/members", label: "সদস্য ব্যবস্থাপনা", icon: UserCog },

@@ -8,6 +8,8 @@ import { appUrl } from "@/lib/app-url"
 import { getViewer } from "@/lib/auth/session"
 import { showAdminUi } from "@/lib/auth/view"
 import { getSnapshot } from "@/lib/data"
+import { getBank } from "@/lib/bank"
+import { payLine } from "@/lib/payment-info"
 import { getDb } from "@/lib/db"
 import { paymentPeople } from "@/lib/payment-people"
 import { toBn } from "@/lib/format"
@@ -28,6 +30,7 @@ export default async function MemberAccountPage({ params }: PageProps<"/members/
   // WhatsApp templates (admins only — they're the ones who see phone numbers).
   let templates: WaTemplate[] = []
   if (adminUi) {
+    const pay = payLine(getBank())
     const overdue = overdueMonths(entry.lines).map((l) => l.month)
     const summary = accountSummaryMessage({
       name: m.nameBn,
@@ -44,13 +47,13 @@ export default async function MemberAccountPage({ params }: PageProps<"/members/
     templates = [
       { label: "হিসাবের সারাংশ", text: summary },
       ...(entry.due > 0
-        ? [{ label: "বকেয়ার রিমাইন্ডার", text: reminderMessage({ name: m.nameBn, due: entry.due, months: overdue, dueDay: snap.settings.dueDay }) }]
+        ? [{ label: "বকেয়ার রিমাইন্ডার", text: reminderMessage({ name: m.nameBn, due: entry.due, months: overdue, dueDay: snap.settings.dueDay, pay }) }]
         : []),
       ...(entry.currentOpen > 0
         ? [
             {
               label: "এই মাসের রিমাইন্ডার",
-              text: upcomingReminderMessage({ name: m.nameBn, month: monthOf(snap.today), amount: entry.currentOpen, dueDay: snap.settings.dueDay }),
+              text: upcomingReminderMessage({ name: m.nameBn, month: monthOf(snap.today), amount: entry.currentOpen, dueDay: snap.settings.dueDay, pay }),
             },
           ]
         : []),

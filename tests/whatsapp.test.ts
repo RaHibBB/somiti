@@ -94,6 +94,10 @@ describe("this month not yet paid", () => {
     expect(accountSummaryMessage({ ...base, paid: 500, currentOpen: 0 })).toContain("কোনো বকেয়া নেই")
     expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10 })).toContain("অক্টোবর ২০২৬-এর চাঁদা ৳৫০০ এখনো জমা হয়নি")
     expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10 })).toContain("বিকাশ (Personal): 01859336893")
+    expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10 })).not.toContain("🏦")
+    const { payLine } = await import("@/lib/payment-info")
+    const pay = payLine({ bank: "Test Bank", branch: "Main", accountName: "A B", accountNo: "123456", routingNo: "999" })
+    expect(upcomingReminderMessage({ name: "ক", month: "2026-10-01", amount: 500, dueDay: 10, pay })).toContain("🏦 Test Bank — A/C 123456 (A B, Main, Routing 999)")
   })
 })
 

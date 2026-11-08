@@ -53,7 +53,7 @@ export function ReportForm({ open, today }: { open: Open[]; today: string }) {
           <Check className="size-7" />
         </div>
         <p className="text-lg font-semibold text-green-900">জানানো হয়েছে — {taka(total)}</p>
-        <p className="text-base">অ্যাডমিন বিকাশ/নগদে মিলিয়ে দেখে অনুমোদন দিলে আপনার হিসাবে জমা হবে এবং রসিদ নম্বর পাবেন।</p>
+        <p className="text-base">অ্যাডমিন বিকাশ/ব্যাংকে মিলিয়ে দেখে অনুমোদন দিলে আপনার হিসাবে জমা হবে এবং রসিদ নম্বর পাবেন।</p>
         <Link href="/" className="block rounded-xl bg-primary py-3 text-base text-white">
           হোমে যান
         </Link>
@@ -67,9 +67,7 @@ export function ReportForm({ open, today }: { open: Open[]; today: string }) {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground">
-        বিকাশ/নগদে সমিতির নম্বরে টাকা পাঠিয়ে থাকলে এখানে জানান। অ্যাডমিন মিলিয়ে দেখে অনুমোদন দিলে তবেই হিসাবে জমা হবে।
-      </p>
+      <p className="text-sm text-muted-foreground">অ্যাডমিন মিলিয়ে দেখে অনুমোদন দিলে তবেই হিসাবে জমা হবে।</p>
 
       <section className="space-y-2">
         <p className="text-base font-medium">কোন মাসের?</p>
@@ -126,7 +124,11 @@ export function ReportForm({ open, today }: { open: Open[]; today: string }) {
         </div>
       </section>
 
-      <Field label="ট্রানজেকশন আইডি (TrxID)" htmlFor="trx" hint="টাকা পাঠানোর পর বিকাশ/নগদের মেসেজে থাকে, যেমন 9JK4ABCD12">
+      <Field
+        label={method === "bank" ? "ট্রানজেকশন / রেফারেন্স নম্বর" : "ট্রানজেকশন আইডি (TrxID)"}
+        htmlFor="trx"
+        hint={method === "bank" ? "ব্যাংকের জমা স্লিপ বা অ্যাপের ট্রান্সফার রেফারেন্স নম্বর" : "টাকা পাঠানোর পর বিকাশ/নগদের মেসেজে থাকে, যেমন 9JK4ABCD12"}
+      >
         <Input id="trx" value={trxId} onChange={(e) => setTrxId(e.target.value)} autoCapitalize="characters" autoComplete="off" className="font-mono uppercase" />
       </Field>
 

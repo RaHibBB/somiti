@@ -20,7 +20,7 @@ export async function submitReport(db: DB, member: Pick<Member, "id" | "status">
   if (input.items.some((i) => !Number.isInteger(i.amount) || i.amount <= 0)) throw new UserError("টাকার পরিমাণ সঠিক নয়।")
   if (new Set(input.items.map((i) => i.forMonth)).size !== input.items.length) throw new UserError("একই মাস দুইবার বাছাই করা হয়েছে।")
   const trxId = input.trxId.trim().toUpperCase()
-  if (trxId.length < 4) throw new UserError("ট্রানজেকশন আইডি লিখুন (বিকাশ/নগদের মেসেজে থাকে)।")
+  if (trxId.length < 4) throw new UserError("ট্রানজেকশন / রেফারেন্স নম্বর লিখুন (বিকাশের মেসেজে বা ব্যাংকের স্লিপে থাকে)।")
   if (input.paidOn > today) throw new UserError("তারিখ ভবিষ্যতের হতে পারে না।")
   // Already used on an admin-entered payment?
   const [dupPayment] = await db.select({ id: payments.id }).from(payments).where(and(eq(payments.trxId, trxId), eq(payments.status, "valid"))).limit(1)

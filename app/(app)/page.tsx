@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
-import { PaymentNumber } from "@/components/payment-number"
+import { PaymentOptions } from "@/components/payment-options"
 import { Logo } from "@/components/logo"
 import { STATUS_CLASS, STATUS_LABEL, StatCard } from "@/components/member-statement"
 import { getViewer } from "@/lib/auth/session"
@@ -174,7 +174,7 @@ export default async function DashboardPage() {
         >
           <Smartphone className="size-7 shrink-0" />
           <span className="min-w-0 flex-1">
-            <span className="block text-sm">বিকাশ/নগদের জানানো জমা</span>
+            <span className="block text-sm">বিকাশ/ব্যাংকের জানানো জমা</span>
             <span className="block text-lg font-bold">{toBn(pendingReportCount)}টি যাচাই বাকি</span>
           </span>
           <ChevronRight className="size-5" />
@@ -285,12 +285,12 @@ export default async function DashboardPage() {
             <span className={cn("rounded-md px-3 py-1 text-sm", STATUS_CLASS[current.status])}>{STATUS_LABEL[current.status]}</span>
           </div>
         ) : null}
-        <PaymentNumber compact />
+        <PaymentOptions compact />
         <Link
           href="/report"
           className="flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-[#e2136e] bg-white px-3 text-base font-medium text-[#b10f57] active:bg-pink-50"
         >
-          <Smartphone className="size-5" /> বিকাশ/নগদে দিয়েছি? এখানে জানান
+          <Smartphone className="size-5" /> টাকা দিন / পাঠিয়েছি — জানান
         </Link>
         <Link href="/me" className="flex h-11 items-center justify-center gap-1 text-base text-brand-navy">
           আমার পুরো হিসাব দেখুন <ChevronRight className="size-5" />

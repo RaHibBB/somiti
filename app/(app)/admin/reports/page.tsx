@@ -14,7 +14,7 @@ export default async function ReportsPage() {
     <div className="space-y-4">
       <PageTitle>জানানো জমা যাচাই</PageTitle>
       <p className="text-sm text-muted-foreground">
-        সদস্যরা বিকাশ/নগদে পাঠিয়ে এখানে জানিয়েছেন। সমিতির বিকাশ/নগদ অ্যাপে ট্রানজেকশন আইডি ও টাকা মিলিয়ে দেখুন, তারপর অনুমোদন দিন। অনুমোদনেই জমা ও রসিদ তৈরি হবে।
+        সদস্যরা বিকাশ বা ব্যাংকে পাঠিয়ে এখানে জানিয়েছেন। সমিতির বিকাশ অ্যাপে বা ব্যাংক স্টেটমেন্টে ট্রানজেকশন নম্বর ও টাকা মিলিয়ে দেখুন, তারপর অনুমোদন দিন। অনুমোদনেই জমা ও রসিদ তৈরি হবে।
       </p>
       {rows.length === 0 ? (
         <p className="rounded-xl bg-green-50 p-4 text-center text-base text-green-900">যাচাই করার মতো কিছু নেই।</p>

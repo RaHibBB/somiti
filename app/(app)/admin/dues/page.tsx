@@ -7,10 +7,13 @@ import { monthLabel, taka, toBn } from "@/lib/format"
 import { monthOf, overdueMonths } from "@/lib/ledger"
 import { WhatsappQueue } from "@/components/whatsapp-queue"
 import { reminderMessage, upcomingReminderMessage, waLink } from "@/lib/whatsapp"
+import { getBank } from "@/lib/bank"
+import { payLine } from "@/lib/payment-info"
 
 export default async function DuesPage() {
   await requireAdmin()
   const snap = await getSnapshot()
+  const pay = payLine(getBank())
   const thisMonth = monthOf(snap.today)
   const active = snap.members.filter((m) => m.member.status === "active")
   // 1) Overdue: the 10th has passed.
@@ -45,6 +48,7 @@ export default async function DuesPage() {
                 due: r.due,
                 months: overdueMonths(r.lines).map((l) => l.month),
                 dueDay: snap.settings.dueDay,
+                pay,
               }),
             ),
           }))}
@@ -52,7 +56,7 @@ export default async function DuesPage() {
         <ul className="space-y-2">
           {rows.map((r) => {
             const months = overdueMonths(r.lines).map((l) => l.month)
-            const msg = reminderMessage({ name: r.member.nameBn, due: r.due, months, dueDay: snap.settings.dueDay })
+            const msg = reminderMessage({ name: r.member.nameBn, due: r.due, months, dueDay: snap.settings.dueDay, pay })
             return (
               <li key={r.member.id} className="rounded-xl border bg-white p-3">
                 <div className="flex items-start justify-between gap-2">
@@ -109,7 +113,7 @@ export default async function DuesPage() {
             hasPhone: !!r.member.phone,
             link: waLink(
               r.member.phone,
-              upcomingReminderMessage({ name: r.member.nameBn, month: thisMonth, amount: r.currentOpen, dueDay: snap.settings.dueDay }),
+              upcomingReminderMessage({ name: r.member.nameBn, month: thisMonth, amount: r.currentOpen, dueDay: snap.settings.dueDay, pay }),
             ),
           }))}
         />
@@ -126,7 +130,7 @@ export default async function DuesPage() {
                 <a
                   href={waLink(
                     r.member.phone,
-                    upcomingReminderMessage({ name: r.member.nameBn, month: thisMonth, amount: r.currentOpen, dueDay: snap.settings.dueDay }),
+                    upcomingReminderMessage({ name: r.member.nameBn, month: thisMonth, amount: r.currentOpen, dueDay: snap.settings.dueDay, pay }),
                   )}
                   target="_blank"
                   rel="noopener noreferrer"

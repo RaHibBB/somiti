@@ -14,7 +14,7 @@ const schema = z.object({
     .min(1, "অন্তত একটি মাস বাছাই করুন।")
     .max(36),
   method: z.enum(["bkash", "nagad", "rocket", "bank"]),
-  trxId: z.string().trim().min(4, "ট্রানজেকশন আইডি লিখুন (বিকাশ/নগদের মেসেজে থাকে)।").max(40),
+  trxId: z.string().trim().min(4, "ট্রানজেকশন / রেফারেন্স নম্বর লিখুন (বিকাশের মেসেজে বা ব্যাংকের স্লিপে থাকে)।").max(40),
   paidOn: isoDate,
   note: optText(300),
 })
