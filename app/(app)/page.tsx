@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { Noto_Naskh_Arabic } from "next/font/google"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { InstallHint } from "@/components/install-hint"
 import { Logo } from "@/components/logo"
@@ -19,9 +18,6 @@ import { dateLongBn, formatDate, monthLabel, taka, toBn } from "@/lib/format"
 import { dueReminder, monthOf } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 
-// Only the Bismillah uses this font, so it is loaded here (not in the root layout) and not preloaded:
-// every other page saved a ~100 KB download.
-const arabic = Noto_Naskh_Arabic({ subsets: ["arabic"], display: "swap", preload: false })
 
 export default async function DashboardPage() {
   const me = await getViewer()
@@ -91,14 +87,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-      {/* Hero: Bismillah, logo, greeting, today's date and three key numbers (open to everyone). */}
+      {/* Hero: logo, greeting, today's date and three key numbers (open to everyone). */}
       <section className="relative -mx-4 -mt-4 overflow-hidden rounded-b-[2rem] bg-gradient-to-b from-[#1d3f57] to-[#12303f] px-4 pt-5 pb-6 text-white lg:col-span-2 lg:mx-0 lg:mt-0 lg:rounded-3xl lg:px-8 lg:pt-6 lg:pb-7">
         {/* Pattern on its own layer: it can't share `background-image` with the gradient. */}
         <div aria-hidden className="pattern-star pointer-events-none absolute inset-0" />
-        <p className={`${arabic.className} relative text-center text-[1.7rem] leading-[1.9] text-amber-100`} lang="ar" dir="rtl">
-          بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-        </p>
-        <div className="relative mt-3 flex items-center gap-3">
+        <div className="relative flex items-center gap-3">
           <div className="shrink-0 rounded-2xl bg-white/95 p-1.5 shadow-md">
             <Logo size={52} />
           </div>
