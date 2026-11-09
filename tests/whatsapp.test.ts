@@ -14,6 +14,10 @@ describe("whatsapp links", () => {
       dueAfter: 0,
     })
     expect(msg).toContain("রসিদ R-0012")
+    expect(msg).not.toContain("রসিদ PDF")
+    expect(receiptMessage({ name: "রহিম", receipts: [{ receiptNo: 12, forMonth: "2026-10-01", amount: 1000 }], paidOn: "2026-10-05", dueAfter: 0, receiptUrl: "https://x.test/print/receipt/12" })).toContain(
+      "রসিদ PDF (খুলে ডাউনলোড করুন): https://x.test/print/receipt/12",
+    )
     expect(msg).toContain("অক্টোবর ২০২৬ — ৳১,০০০")
     expect(msg).toContain("০৫/১০/২০২৬")
     expect(msg).toContain("কোনো বকেয়া নেই")

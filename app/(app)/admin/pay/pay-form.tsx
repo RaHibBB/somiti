@@ -177,6 +177,8 @@ export function PayForm({
       dueAfter: result.dueAfter,
       currentOpenAfter: result.currentOpenAfter,
       receivedBy: receivers.find((r) => r.id === receivedBy)?.name,
+      // One receipt for all the months of this save; the member opens it from the message.
+      receiptUrl: `${window.location.origin}/print/receipt/${result.receipts[0].receiptNo}`,
     })
     return (
       <div className="space-y-5">

@@ -31,6 +31,8 @@ export function receiptMessage(input: {
   currentOpenAfter?: number
   /** The admin who took the money. */
   receivedBy?: string
+  /** Link to the receipt page, where the member can open/download the PDF. */
+  receiptUrl?: string
 }): string {
   const after: string[] = []
   if (input.dueAfter > 0) after.push(`বর্তমান বকেয়া: ${taka(input.dueAfter)}`)
@@ -46,6 +48,7 @@ export function receiptMessage(input: {
     `তারিখ: ${formatDate(input.paidOn)}`,
     input.receivedBy ? `টাকা গ্রহণ করেছেন: ${input.receivedBy}` : null,
     ...after,
+    input.receiptUrl ? `রসিদ PDF (খুলে ডাউনলোড করুন): ${input.receiptUrl}` : null,
     `ধন্যবাদ — ${SAMITI_NAME}`,
   ]
     .filter(Boolean)

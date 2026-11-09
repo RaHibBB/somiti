@@ -10,6 +10,6 @@ export function paymentNotification(memberId: number, receipts: { receiptNo: num
     kind: "payment",
     title: `জমা হয়েছে ${taka(total)}`,
     body: `${months} · রসিদ ${receipts.map((r) => receiptLabel(r.receiptNo)).join(", ")}। ধন্যবাদ!`,
-    url: "/me",
+    url: `/print/receipt/${Math.min(...receipts.map((r) => r.receiptNo))}`,
   }
 }

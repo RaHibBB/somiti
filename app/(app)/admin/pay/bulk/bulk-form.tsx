@@ -95,7 +95,13 @@ export function BulkPayForm({
               <a
                 href={waLink(
                   r.phone,
-                  receiptMessage({ name: r.name, receipts: [{ receiptNo: r.receiptNo, forMonth: month, amount: r.amount }], paidOn, dueAfter: r.dueAfter }),
+                  receiptMessage({
+                    name: r.name,
+                    receipts: [{ receiptNo: r.receiptNo, forMonth: month, amount: r.amount }],
+                    paidOn,
+                    dueAfter: r.dueAfter,
+                    receiptUrl: `${window.location.origin}/print/receipt/${r.receiptNo}`,
+                  }),
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
