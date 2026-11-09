@@ -4,6 +4,7 @@ import { LogoSvg } from "@/lib/logo-art"
 import { SAMITI_NAME } from "@/lib/whatsapp"
 import { Letterhead } from "./letterhead"
 import { PrintToolbar } from "./print-toolbar"
+import type { ShareInfo } from "./share-pdf"
 
 /**
  * A4 document shell: toolbar (screen only), letterhead, title, generated date, and an
@@ -14,12 +15,15 @@ export async function PrintDoc({
   title,
   subtitle,
   stamp,
+  share,
   children,
 }: {
   title: string
   subtitle?: string
   /** Big red diagonal word across every page (e.g. "বাতিল" for a voided receipt). */
   stamp?: string
+  /** One-page documents (receipts): make the PDF on the phone and share it straight to WhatsApp. */
+  share?: ShareInfo
   children: React.ReactNode
 }) {
   const viewer = await getCurrentMember()
@@ -27,7 +31,7 @@ export async function PrintDoc({
   const now = formatDateTime(new Date())
   return (
     <>
-      <PrintToolbar />
+      <PrintToolbar share={share} />
       <div className="print-doc">
         {/* Watermark: faint logo + samiti name behind the content, repeated on every printed page. */}
         <div aria-hidden className="print-watermark">

@@ -2,6 +2,7 @@ import Link from "@/components/link"
 import { FileDown } from "lucide-react"
 import type { MemberLedger } from "@/lib/data"
 import type { PaymentPeople } from "@/lib/payment-people"
+import { receiptGroups } from "@/lib/receipts"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { MonthStatus } from "@/lib/ledger"
@@ -58,7 +59,9 @@ export function MemberStatement({
   // Months already due, plus the next few upcoming ones.
   const firstFuture = lines.findIndex((l) => !l.isDue)
   const visible = firstFuture === -1 ? lines : lines.slice(0, firstFuture + showUpcoming)
-  const pays = [...entry.payments].sort((a, b) => b.receiptNo - a.receiptNo)
+  // Months paid together in one save are one receipt (one card, one PDF).
+  const receipts = receiptGroups(entry.payments)
+  const payCount = entry.payments.length
 
   return (
     <div className="space-y-5">
@@ -95,27 +98,42 @@ export function MemberStatement({
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold text-brand-navy">সব জমা ({toBn(pays.length)})</h2>
-        {pays.length === 0 ? (
+        <h2 className="text-lg font-semibold text-brand-navy">সব জমা ({toBn(receipts.length)}টি রসিদ)</h2>
+        {payCount === 0 ? (
           <p className="rounded-xl border bg-white p-4 text-center text-muted-foreground">এখনো কোনো জমা নেই</p>
         ) : (
           <ul className="divide-y overflow-hidden rounded-xl border bg-white">
-            {pays.map((p) => {
-              const isVoid = p.status === "void"
+            {receipts.map((g) => {
+              const p = g.rows[0]
+              const several = g.rows.length > 1
               return (
-                <li key={p.id} className={cn("px-3 py-2.5", isVoid && "bg-muted/60")}>
+                <li key={g.receiptNo} className={cn("px-3 py-2.5", g.allVoid && "bg-muted/60")}>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className={cn("font-mono text-base font-semibold", isVoid && "line-through")}>
-                      {receiptLabel(p.receiptNo)}
+                    <span className={cn("font-mono text-base font-semibold", g.allVoid && "line-through")}>
+                      {g.receiptNos.map(receiptLabel).join(", ")}
                     </span>
-                    <span className={cn("text-base font-semibold", isVoid && "text-muted-foreground line-through")}>
-                      {taka(p.amount)}
+                    <span className={cn("text-base font-semibold", g.allVoid && "text-muted-foreground line-through")}>
+                      {taka(g.allVoid ? g.rows.reduce((s, r) => s + r.amount, 0) : g.total)}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {monthLabel(p.forMonth)} · {formatDate(p.paidOn)} · {METHOD_LABELS[p.method]}
+                    {several ? `${toBn(g.rows.length)} মাস` : monthLabel(p.forMonth)} · {formatDate(p.paidOn)} · {METHOD_LABELS[p.method]}
                     {p.trxId ? ` · ${p.trxId}` : ""}
                   </p>
+                  {several ? (
+                    <ul className="mt-1 space-y-0.5 rounded-lg bg-muted/50 px-2 py-1 text-sm">
+                      {g.rows.map((r) => (
+                        <li key={r.id} className="flex items-center justify-between gap-2">
+                          <span className={cn(r.status === "void" && "line-through")}>
+                            {monthLabel(r.forMonth)} <span className="text-xs text-muted-foreground">({receiptLabel(r.receiptNo)})</span>
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <span className={cn(r.status === "void" && "text-muted-foreground line-through")}>{taka(r.amount)}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                   {people?.[p.id] ? (
                     <p className="text-sm text-muted-foreground">
                       {[
@@ -126,19 +144,31 @@ export function MemberStatement({
                         .join(" · ")}
                     </p>
                   ) : null}
-                  {isVoid ? (
-                    <p className="text-sm font-medium text-destructive">
-                      বাতিল{people?.[p.id]?.voided ? ` (${people[p.id].voided})` : ""} — {p.voidReason}
-                    </p>
-                  ) : null}
-                  <Link href={`/print/receipt/${p.receiptNo}`} className="mt-1 inline-flex items-center gap-1 text-sm text-brand-navy underline">
-                    <FileDown className="size-4" /> রসিদ PDF
+                  {g.rows
+                    .filter((r) => r.status === "void")
+                    .map((r) => (
+                      <p key={r.id} className="text-sm font-medium text-destructive">
+                        বাতিল{several ? ` (${monthLabel(r.forMonth)})` : ""}
+                        {people?.[r.id]?.voided ? ` (${people[r.id].voided})` : ""} — {r.voidReason}
+                      </p>
+                    ))}
+                  <Link href={`/print/receipt/${g.receiptNo}`} className="mt-1 inline-flex items-center gap-1 text-sm text-brand-navy underline">
+                    <FileDown className="size-4" /> রসিদ PDF / WhatsApp
                   </Link>
-                  {canVoid && !isVoid ? (
-                    <div className="mt-1 flex justify-end">
-                      <VoidButton kind="payment" id={p.id} label={`${receiptLabel(p.receiptNo)} (${monthLabel(p.forMonth)}, ${taka(p.amount)})`} />
-                    </div>
-                  ) : null}
+                  {canVoid
+                    ? g.rows
+                        .filter((r) => r.status === "valid")
+                        .map((r) => (
+                          <div key={r.id} className="mt-1 flex justify-end">
+                            <VoidButton
+                              kind="payment"
+                              id={r.id}
+                              label={`${receiptLabel(r.receiptNo)} (${monthLabel(r.forMonth)}, ${taka(r.amount)})`}
+                              buttonText={several ? `${monthLabel(r.forMonth)} ভুল হলে বাতিল` : undefined}
+                            />
+                          </div>
+                        ))
+                    : null}
                 </li>
               )
             })}

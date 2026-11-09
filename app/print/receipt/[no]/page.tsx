@@ -2,6 +2,9 @@ import { notFound } from "next/navigation"
 import { PrintDoc } from "@/components/print/print-doc"
 import { getSnapshot } from "@/lib/data"
 import { formatDate, METHOD_LABELS, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
+import { sameReceipt } from "@/lib/receipts"
+import { SAMITI_NAME } from "@/lib/whatsapp"
+import type { MemberLedger } from "@/lib/data"
 
 // The browser proposes the page title as the PDF file name: receipt number, member name and month(s).
 export async function generateMetadata({ params, searchParams }: PageProps<"/print/receipt/[no]">) {
@@ -9,9 +12,18 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/pri
   const nos = parseNos(no, (await searchParams).with)
   const entry = (await getSnapshot()).members.find((x) => x.payments.some((p) => p.receiptNo === no))
   if (!entry) return { title: "টাকা জমার রসিদ" }
-  const pays = entry.payments.filter((p) => nos.includes(p.receiptNo)).sort((a, b) => a.receiptNo - b.receiptNo)
+  const pays = receiptRows(entry, no, nos)
   const months = pays.map((p) => monthLabel(p.forMonth)).join(", ")
-  return { title: `রসিদ ${receiptLabel(no)} - ${entry.member.nameBn} - ${months}` }
+  return { title: `রসিদ ${receiptLabel(pays[0]?.receiptNo ?? no)} - ${entry.member.nameBn} - ${months}` }
+}
+
+/**
+ * Everything paid in the same save as receipt `no` (several months = one receipt), plus any
+ * extra numbers from ?with= — always only this member's receipts.
+ */
+function receiptRows(entry: MemberLedger, no: number, nos: number[]) {
+  const together = new Set([...sameReceipt(entry.payments, no).map((p) => p.receiptNo), ...nos])
+  return entry.payments.filter((p) => together.has(p.receiptNo)).sort((a, b) => a.receiptNo - b.receiptNo)
 }
 
 function parseNos(no: number, rawWith: string | string[] | undefined): number[] {
@@ -22,7 +34,7 @@ function parseNos(no: number, rawWith: string | string[] | undefined): number[] 
   return [...new Set([no, ...extra])].slice(0, 12)
 }
 
-/** Money receipt for one payment (or several, for a multi-month payment: /print/receipt/18?with=19,20). */
+/** Money receipt: one save = one receipt, whatever month's number the link uses (/print/receipt/18). */
 export default async function PrintReceiptPage({ params, searchParams }: PageProps<"/print/receipt/[no]">) {
   const no = Number((await params).no)
   const nos = parseNos(no, (await searchParams).with)
@@ -30,7 +42,7 @@ export default async function PrintReceiptPage({ params, searchParams }: PagePro
   const entry = snap.members.find((m) => m.payments.some((p) => p.receiptNo === no))
   if (!entry) notFound()
   // Only this member's receipts, so a hand-edited link can't mix people on one receipt.
-  const pays = entry.payments.filter((p) => nos.includes(p.receiptNo)).sort((a, b) => a.receiptNo - b.receiptNo)
+  const pays = receiptRows(entry, no, nos)
   const m = entry.member
   const valid = pays.filter((p) => p.status === "valid")
   const voided = pays.filter((p) => p.status === "void")
@@ -43,6 +55,10 @@ export default async function PrintReceiptPage({ params, searchParams }: PagePro
       title="টাকা জমার রসিদ"
       subtitle={`রসিদ নং ${pays.map((p) => receiptLabel(p.receiptNo)).join(", ")}`}
       stamp={valid.length === 0 ? "বাতিল" : undefined}
+      share={{
+        fileName: `রসিদ ${receiptLabel(first.receiptNo)} - ${m.nameBn} - ${pays.map((p) => monthLabel(p.forMonth)).join(", ")}`,
+        text: `${SAMITI_NAME}\n${m.nameBn}-এর টাকা জমার রসিদ (${pays.map((p) => monthLabel(p.forMonth)).join(", ")}) — মোট ${taka(total)}`,
+      }}
     >
       <table className="mb-4">
         <tbody>

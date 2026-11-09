@@ -145,3 +145,24 @@
     print-color-adjust: exact;
   }
 }
+
+/* Off-screen copy used to make a PDF on the phone (receipt "WhatsApp-এ পাঠান"): always A4 width,
+   whatever the screen, and the fixed watermark/stamp sit inside the copy instead of the viewport. */
+.pdf-capture {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 794px; /* A4 at 96 dpi */
+}
+.pdf-capture .print-doc {
+  width: 794px;
+  max-width: none;
+  margin: 0;
+  padding: 45px;
+  overflow: visible;
+  box-shadow: none;
+}
+.pdf-capture .print-watermark,
+.pdf-capture .print-stamp {
+  position: absolute;
+}

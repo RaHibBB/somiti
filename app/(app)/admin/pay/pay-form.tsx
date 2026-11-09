@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useRef, useState, useTransition } from "react"
-import { Check, ChevronDown, Loader2, MessageCircle, RotateCcw } from "lucide-react"
+import { Check, ChevronDown, Loader2, MessageCircle, RotateCcw, FileDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -185,12 +185,11 @@ export function PayForm({
             <Check className="size-7" />
           </div>
           <p className="text-base text-green-900">জমা সংরক্ষিত হয়েছে — {member.name}</p>
-          <p className="mt-2 text-sm text-muted-foreground">রসিদ নম্বর</p>
-          {result.receipts.map((r) => (
-            <p key={r.receiptNo} className="font-mono text-4xl font-bold tracking-wide text-brand-navy">
-              {receiptLabel(r.receiptNo)}
-            </p>
-          ))}
+          <p className="mt-2 text-sm text-muted-foreground">রসিদ নম্বর{result.receipts.length > 1 ? ` (${toBn(result.receipts.length)} মাস, একটি রসিদে)` : ""}</p>
+          <p className="font-mono text-4xl font-bold tracking-wide text-brand-navy">{receiptLabel(result.receipts[0].receiptNo)}</p>
+          {result.receipts.length > 1 ? (
+            <p className="font-mono text-sm text-muted-foreground">{result.receipts.map((r) => receiptLabel(r.receiptNo)).join(", ")}</p>
+          ) : null}
           <ul className="mt-3 space-y-1 text-base">
             {result.receipts.map((r) => (
               <li key={r.receiptNo}>
@@ -209,15 +208,15 @@ export function PayForm({
           rel="noopener noreferrer"
           className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-lg font-semibold text-white active:opacity-90"
         >
-          <MessageCircle className="size-6" /> WhatsApp-এ রসিদ পাঠান
+          <MessageCircle className="size-6" /> WhatsApp-এ মেসেজ পাঠান
         </a>
         <a
           href={`/print/receipt/${result.receipts[0].receiptNo}${result.receipts.length > 1 ? `?with=${result.receipts.slice(1).map((r) => r.receiptNo).join(",")}` : ""}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex h-12 w-full items-center justify-center rounded-xl border-2 border-brand-navy text-base font-semibold text-brand-navy active:bg-muted"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#25D366] text-base font-semibold text-[#128C4B] active:bg-muted"
         >
-          রসিদ PDF (নাম, লোগো ও ওয়াটারমার্কসহ)
+          <FileDown className="size-5" /> রসিদ PDF — পাঠান / ডাউনলোড
         </a>
         {!member.phone ? <p className="text-center text-sm text-muted-foreground">এই সদস্যের মোবাইল নম্বর নেই — WhatsApp-এ কাকে পাঠাবেন বেছে নিন।</p> : null}
         <Button size="xl" variant="outline" onClick={reset}>
