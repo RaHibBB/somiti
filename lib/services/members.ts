@@ -31,7 +31,6 @@ function publicFields(m: Member) {
 
 function rethrowFriendly(err: unknown): never {
   if (isUniqueViolation(err, "members_member_no_unique")) throw new UserError("এই সদস্য নম্বর আগেই আছে।")
-  if (isUniqueViolation(err, "members_phone_unique")) throw new UserError("এই মোবাইল নম্বর অন্য সদস্যের নামে আছে।")
   if (isUniqueViolation(err, "members_email_unique")) throw new UserError("এই ইমেইল অন্য সদস্যের নামে আছে।")
   throw err
 }

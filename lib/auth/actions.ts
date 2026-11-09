@@ -13,15 +13,13 @@ import { toBn } from "@/lib/format"
 import { sendMail } from "@/lib/mail"
 import { UserError } from "@/lib/services/errors"
 import { createResetToken, RESET_TTL_MINUTES, resetPasswordWithToken } from "@/lib/services/password-reset"
-import { clearLoginAttempts, finishLock, reserveLoginAttempt } from "./attempts"
+import { authenticate } from "./authenticate"
 import { safeNext } from "./next-path"
-import { isValidPassword, isWeakPassword, LOCK_MINUTES, parseIdentifier, PASSWORD_MAX } from "./pin"
+import { isValidPassword, isWeakPassword, parseIdentifier, PASSWORD_MAX } from "./pin"
 import { clearSessionCookie, requireMember, setSessionCookie } from "./session"
 
 export type FormState = { error?: string; ok?: boolean; identifier?: string } | undefined
 
-const BAD_LOGIN = "ইমেইল/মোবাইল/সদস্য নম্বর অথবা পাসওয়ার্ড ভুল।"
-const DUMMY_HASH = "$2b$10$qTATgbV45yUmIABTM4QOGeEtr1v1LQIrI7Jx3sgqTkuyBUoSfWv0y"
 
 export async function loginAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const typed = String(formData.get("identifier") ?? "").slice(0, 254)
@@ -34,41 +32,10 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
   if (!ident) return fail("ইমেইল, মোবাইল নম্বর (০১XXXXXXXXX) বা সদস্য নম্বর সঠিকভাবে লিখুন।")
   const { password } = parsed.data
 
-  const db = getDb()
-  const where =
-    ident.kind === "email"
-      ? eq(members.email, ident.email)
-      : ident.kind === "phone"
-        ? eq(members.phone, ident.phone)
-        : eq(members.memberNo, ident.memberNo)
-  const [member] = await db.select().from(members).where(where).limit(1)
-  if (!member || !member.pinHash) {
-    // Spend similar time as a real check so timing doesn't reveal which accounts exist.
-    await bcrypt.compare(password, DUMMY_HASH)
-    return fail(BAD_LOGIN)
-  }
-  if (member.status !== "active") return fail("এই সদস্যপদ বাতিল করা হয়েছে। অ্যাডমিনের সাথে যোগাযোগ করুন।")
-
-  const lockedMsg = (until: Date | null) => {
-    const mins = until ? Math.max(1, Math.ceil((until.getTime() - Date.now()) / 60_000)) : LOCK_MINUTES
-    return fail(`বারবার ভুল পাসওয়ার্ডের কারণে অ্যাকাউন্ট সাময়িক বন্ধ। ${toBn(mins)} মিনিট পরে চেষ্টা করুন।`)
-  }
-  // Reserve this attempt atomically before the (slow) password check — see lib/auth/attempts.ts.
-  const slot = await reserveLoginAttempt(db, member.id)
-  if (!slot.allowed) return lockedMsg(slot.lockedUntil)
-
-  if (!(await bcrypt.compare(password, member.pinHash))) {
-    if (slot.lockedNow) {
-      await finishLock(db, member.id)
-      await db.transaction(async (tx) => {
-        await writeAudit(tx, { actorId: null, action: "login_locked", table: "members", rowId: member.id })
-      })
-      return fail(`৫ বার ভুল পাসওয়ার্ড। ${toBn(LOCK_MINUTES)} মিনিটের জন্য অ্যাকাউন্ট বন্ধ।`)
-    }
-    return fail(BAD_LOGIN)
-  }
-
-  await clearLoginAttempts(db, member.id)
+  // Checks the password, throttles, and handles a mobile number shared by several members.
+  const res = await authenticate(getDb(), ident, password)
+  if (!res.ok) return fail(res.error)
+  const member = res.member
   await setSessionCookie(member)
   redirect(member.mustChangePin ? "/settings/pin" : safeNext(formData.get("next")))
 }

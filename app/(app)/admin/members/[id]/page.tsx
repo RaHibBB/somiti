@@ -23,6 +23,8 @@ export default async function AdminMemberPage({ params }: PageProps<"/admin/memb
   const entry = snap.members.find((m) => m.member.id === id)
   if (!entry) notFound()
   const m = entry.member
+  // Other members with the same mobile number (a family may share one).
+  const sharing = m.phone ? snap.members.filter((x) => x.member.id !== m.id && x.member.phone === m.phone && x.member.status === "active").map((x) => x.member) : []
   const sortedHistory = [...entry.history].sort((a, b) =>
     a.effectiveMonth === b.effectiveMonth ? b.id - a.id : b.effectiveMonth.localeCompare(a.effectiveMonth),
   )
@@ -66,6 +68,11 @@ export default async function AdminMemberPage({ params }: PageProps<"/admin/memb
       ) : null}
 
       <Section title="তথ্য">
+        {sharing.length > 0 ? (
+          <p className="rounded-lg bg-secondary px-3 py-2 text-sm">
+            এই মোবাইল নম্বর আরও যাঁদের: {sharing.map((x) => `${toBn(x.memberNo)}. ${x.nameBn}`).join(", ")}। নম্বর দিয়ে লগইনের সময় যাঁর পাসওয়ার্ড মিলবে, তিনিই ঢুকবেন — অথবা সদস্য নম্বর দিয়ে লগইন করতে পারেন।
+          </p>
+        ) : null}
         <EditMemberForm
           defaults={{
             id: m.id,

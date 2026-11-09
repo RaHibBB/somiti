@@ -54,7 +54,8 @@ export const members = pgTable(
     id: serial("id").primaryKey(),
     memberNo: integer("member_no").notNull().unique(),
     nameBn: text("name_bn").notNull(),
-    phone: varchar("phone", { length: 16 }).unique(),
+    // Not unique: a family may share one mobile number (login then goes by each member's password).
+    phone: varchar("phone", { length: 16 }),
     // Optional login + password-reset address, stored lower-case.
     email: varchar("email", { length: 254 }).unique(),
     role: roleEnum("role").notNull().default("member"),
@@ -78,6 +79,7 @@ export const members = pgTable(
   },
   (t) => [
     check("members_phone_format", sql`${t.phone} IS NULL OR ${t.phone} ~ '^(01[3-9][0-9]{8}|[+][1-9][0-9]{7,14})$'`),
+    index("members_phone_idx").on(t.phone),
     check("members_email_lowercase", sql`${t.email} IS NULL OR ${t.email} = lower(${t.email})`),
     check("members_nominee_phone_format", sql`${t.nomineePhone} IS NULL OR ${t.nomineePhone} ~ '^(01[3-9][0-9]{8}|[+][1-9][0-9]{7,14})$'`),
     check("members_member_no_positive", sql`${t.memberNo} > 0`),

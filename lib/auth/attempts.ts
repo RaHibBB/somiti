@@ -38,6 +38,17 @@ export async function clearLoginAttempts(db: DB, memberId: number) {
   await db.update(members).set({ failedLogins: 0, lockedUntil: null }).where(eq(members.id, memberId))
 }
 
+/**
+ * Take back one reserved attempt that was not this member's failure (another member with the
+ * same mobile number logged in correctly). Lifts the lock only if this very reservation set it.
+ */
+export async function undoReservation(db: DB, memberId: number, lockedNow: boolean) {
+  await db
+    .update(members)
+    .set({ failedLogins: sql`GREATEST(${members.failedLogins} - 1, 0)`, ...(lockedNow ? { lockedUntil: null } : {}) })
+    .where(eq(members.id, memberId))
+}
+
 /** After a wrong password on the attempt that set the lock: the counter restarts when the lock ends. */
 export async function finishLock(db: DB, memberId: number) {
   await db.update(members).set({ failedLogins: 0 }).where(eq(members.id, memberId))

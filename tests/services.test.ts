@@ -47,13 +47,13 @@ beforeAll(async () => {
 })
 
 describe("members", () => {
-  it("rejects duplicate member numbers and phones with Bengali messages", async () => {
+  it("rejects duplicate member numbers, but allows a shared mobile number (a family)", async () => {
     await expect(
       createMember(db, adminId, { ...base, memberNo: 2, nameBn: "x", phone: null, shares: 1, shareStartMonth: "2026-10-01" }),
     ).rejects.toThrow("এই সদস্য নম্বর আগেই আছে।")
     await expect(
       createMember(db, adminId, { ...base, memberNo: 3, nameBn: "x", phone: "01711111111", shares: 1, shareStartMonth: "2026-10-01" }),
-    ).rejects.toThrow("মোবাইল নম্বর")
+    ).resolves.toBeTruthy()
   })
 
   it("rejects zero shares (there is no upper limit)", async () => {
