@@ -40,9 +40,6 @@ describe("monthly group message", () => {
       collected: 15000,
       expected: 16500,
       owing: [{ no: 5, name: "করিম", due: 1000 }],
-      fundTotal: 20000,
-      cash: 20000,
-      invested: 0,
       reportUrl: "https://example.test/print/month/2026-10",
     })
     expect(msg).toContain("অক্টোবর ২০২৬ — মাসিক হিসাব")
@@ -54,7 +51,7 @@ describe("monthly group message", () => {
 
   it("adds the bank line when asked, and only mentions cash in hand when there is some", async () => {
     const { monthlyGroupMessage } = await import("@/lib/whatsapp")
-    const base = { month: "2026-11-01", paidCount: 1, activeCount: 1, collected: 500, expected: 500, owing: [], fundTotal: 500, cash: 500, invested: 0, reportUrl: "u" }
+    const base = { month: "2026-11-01", paidCount: 1, activeCount: 1, collected: 500, expected: 500, owing: [], reportUrl: "u" }
     expect(monthlyGroupMessage({ ...base, banked: { toBank: 400, inHand: 100 } })).toContain("ব্যাংকে জমা: ৳৪০০ · অ্যাডমিনের হাতে: ৳১০০")
     const allBanked = monthlyGroupMessage({ ...base, banked: { toBank: 500, inHand: 0 } })
     expect(allBanked).toContain("ব্যাংকে জমা: ৳৫০০")
@@ -64,7 +61,7 @@ describe("monthly group message", () => {
   it("adds where to send money when given", async () => {
     const { monthlyGroupMessage } = await import("@/lib/whatsapp")
     const { payLine } = await import("@/lib/payment-info")
-    const base = { month: "2026-11-01", paidCount: 0, activeCount: 1, collected: 0, expected: 500, owing: [], fundTotal: 0, cash: 0, invested: 0, reportUrl: "u" }
+    const base = { month: "2026-11-01", paidCount: 0, activeCount: 1, collected: 0, expected: 500, owing: [], reportUrl: "u" }
     const msg = monthlyGroupMessage({ ...base, pay: payLine({ bank: "Test Bank", branch: "Main", accountName: "A B", accountNo: "123456", routingNo: null }) })
     expect(msg).toContain(["টাকা পাঠানোর নম্বর:", "💳 বিকাশ (Personal): 01859336893", "🏦 Test Bank — A/C 123456 (A B, Main)"].join("\n"))
     expect(monthlyGroupMessage(base)).not.toContain("টাকা পাঠানোর নম্বর")
@@ -115,7 +112,7 @@ describe("this month not yet paid", () => {
 })
 
 describe("no contradictory 'no dues' lines", () => {
-  const base = { month: "2026-10-01", paidCount: 17, activeCount: 32, collected: 15500, expected: 27500, fundTotal: 15500, cash: 15500, invested: 0, reportUrl: "https://x.test" }
+  const base = { month: "2026-10-01", paidCount: 17, activeCount: 32, collected: 15500, expected: 27500, reportUrl: "https://x.test" }
   it("group message: nobody overdue but 15 haven't paid → no 'no dues' line", async () => {
     const { monthlyGroupMessage } = await import("@/lib/whatsapp")
     const msg = monthlyGroupMessage({ ...base, owing: [], notYet: [{ no: 1, name: "শরফুদ্দিন" }, { no: 2, name: "ইদ্রিস মনি" }] })

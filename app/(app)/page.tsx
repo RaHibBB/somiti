@@ -82,9 +82,6 @@ export default async function DashboardPage() {
           .sort((a, b) => b.due - a.due)
           .map((m) => ({ no: m.member.memberNo, name: m.member.nameBn, due: m.due })),
         notYet: active.filter((m) => m.due === 0 && m.currentOpen > 0).map((m) => ({ no: m.member.memberNo, name: m.member.nameBn })),
-        fundTotal: fund.total,
-        cash: fund.cash,
-        invested: fund.invested,
         pay: payLine(getBank()),
         reportUrl: `${await appUrl()}/print/month/${thisMonth.slice(0, 7)}`,
       })

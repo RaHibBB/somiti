@@ -3,7 +3,7 @@ import { asc, desc, eq } from "drizzle-orm"
 import { Check, ChevronRight } from "lucide-react"
 import { PageTitle } from "@/components/layout/page-title"
 import { requireAdmin } from "@/lib/auth/session"
-import { getSnapshot, loadFund, loadTransactions } from "@/lib/data"
+import { getSnapshot, loadTransactions } from "@/lib/data"
 import { appUrl } from "@/lib/app-url"
 import { monthlyGroupMessage } from "@/lib/whatsapp"
 import { getGroupUrl } from "@/lib/group"
@@ -49,11 +49,10 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
   const month = typeof raw === "string" && /^\d{4}-\d{2}$/.test(raw) && `${raw}-01` >= first && `${raw}-01` <= current ? `${raw}-01` : current
   const label = monthLabel(month)
 
-  const [events, handovers, txns, fund, base] = await Promise.all([
+  const [events, handovers, txns, base] = await Promise.all([
     db.select().from(monthCloseEvents).where(eq(monthCloseEvents.month, month)).orderBy(desc(monthCloseEvents.id)),
     db.select().from(cashHandovers).orderBy(asc(cashHandovers.id)),
     loadTransactions(db),
-    loadFund(db),
     appUrl(),
   ])
   const latest = events[0]
@@ -76,7 +75,7 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
   )
   const holdingNow = hold.holders.filter((h) => h.closing !== 0)
 
-  // One tap: the month's summary for the WhatsApp group (who paid, who owes, bank, fund).
+  // One tap: the month's summary for the WhatsApp group (who paid, who owes, bank).
   const groupMsg = monthlyGroupMessage({
     month,
     paidCount: lines.filter((l) => l.status === "paid").length,
@@ -90,9 +89,6 @@ export default async function MonthPage({ searchParams }: PageProps<"/admin/mont
     notYet: active
       .filter((m) => m.due === 0 && (m.lines.find((l) => l.month === month)?.remaining ?? 0) > 0)
       .map((m) => ({ no: m.member.memberNo, name: m.member.nameBn })),
-    fundTotal: fund.total,
-    cash: fund.cash,
-    invested: fund.invested,
     banked: { toBank: hold.toBank, inHand: hold.inHand },
     pay: payLine(getBank()),
     reportUrl: `${base}/print/month/${month.slice(0, 7)}`,
