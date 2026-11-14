@@ -143,3 +143,16 @@ describe("login details message", () => {
     expect(inviteMessage({ name: "ক", memberNo: 21, phone: null, pin: "123987", loginUrl: "u" })).toContain("লগইন: সদস্য নং ২১")
   })
 })
+
+describe("English digits in WhatsApp messages", () => {
+  it("waLink and waText turn Bangla digits into English, nothing else changes", async () => {
+    const { receiptMessage, waLink, waText } = await import("@/lib/whatsapp")
+    const msg = receiptMessage({ name: "রহিম", receipts: [{ receiptNo: 68, forMonth: "2026-11-01", amount: 1500 }], paidOn: "2026-11-07", dueAfter: 0 })
+    expect(msg).toContain("৳১,৫০০") // the app itself still writes Bangla digits
+    const sent = waText(msg)
+    expect(sent).toContain("নভেম্বর 2026 — ৳1,500 (রসিদ R-0068)")
+    expect(sent).toContain("তারিখ: 07/11/2026")
+    expect(sent).not.toMatch(/[০-৯]/)
+    expect(decodeURIComponent(waLink("01712345678", msg).split("text=")[1])).toBe(sent)
+  })
+})

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { FileDown, Loader2, Printer, Share2 } from "lucide-react"
+import { fromBn } from "@/lib/format"
 
 export type ShareInfo = {
   /** Without ".pdf". */
@@ -76,7 +77,7 @@ export function SharePdfButtons({ share }: { share: ShareInfo }) {
     setNote(undefined)
     if (canShareFiles) {
       try {
-        await navigator.share({ files: [file], title: file.name, text: share.text })
+        await navigator.share({ files: [file], title: file.name, text: fromBn(share.text) })
       } catch (err) {
         if ((err as Error).name !== "AbortError") setNote("শেয়ার করা যায়নি। নিচের \"PDF ডাউনলোড\" দিয়ে নামিয়ে WhatsApp-এ সংযুক্ত করুন।")
       }

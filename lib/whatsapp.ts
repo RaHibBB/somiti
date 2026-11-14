@@ -1,5 +1,5 @@
 // wa.me links with prefilled Bengali text — free, no API.
-import { formatDate, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
+import { formatDate, fromBn, monthLabel, receiptLabel, taka, toBn } from "@/lib/format"
 import { payLine } from "@/lib/payment-info"
 
 export const SAMITI_NAME = "পূর্ব বামন সুন্দর সমমনা সমবায় সমিতি"
@@ -11,10 +11,19 @@ export function waNumber(phone: string | null | undefined): string | null {
   return "88" + phone
 }
 
-/** Without a phone, wa.me opens WhatsApp's contact picker with the text ready. */
+/**
+ * Without a phone, wa.me opens WhatsApp's contact picker with the text ready.
+ * Digits in WhatsApp messages go out as English digits (০১২ → 012), the samiti's preference;
+ * the app itself keeps showing Bangla digits.
+ */
 export function waLink(phone: string | null | undefined, text: string): string {
   const n = waNumber(phone)
-  return `https://wa.me/${n ?? ""}?text=${encodeURIComponent(text)}`
+  return `https://wa.me/${n ?? ""}?text=${encodeURIComponent(waText(text))}`
+}
+
+/** A WhatsApp message as it is sent: Bangla digits replaced by English digits. */
+export function waText(text: string): string {
+  return fromBn(text)
 }
 
 function greeting(name: string): string {

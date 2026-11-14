@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Check, MessageCircle } from "lucide-react"
-import { waLink } from "@/lib/whatsapp"
+import { waLink, waText } from "@/lib/whatsapp"
 import { cn } from "@/lib/utils"
 
 /**
@@ -37,10 +37,10 @@ export function GroupShare({
 
   async function copyAndOpen() {
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(waText(text))
     } catch {
       const t = document.createElement("textarea")
-      t.value = text
+      t.value = waText(text)
       document.body.appendChild(t)
       t.select()
       document.execCommand("copy")

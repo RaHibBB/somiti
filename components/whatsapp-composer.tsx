@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { MessageCircle } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
-import { waLink } from "@/lib/whatsapp"
+import { waLink, waText } from "@/lib/whatsapp"
 import { cn } from "@/lib/utils"
 
 export type WaTemplate = { label: string; text: string }
@@ -14,11 +14,12 @@ export type WaTemplate = { label: string; text: string }
  */
 export function WhatsAppComposer({ phone, templates }: { phone: string | null; templates: WaTemplate[] }) {
   const [picked, setPicked] = useState(0)
-  const [text, setText] = useState(templates[0]?.text ?? "")
+  // Shown exactly as it will be sent (English digits), so what the admin edits is what goes out.
+  const [text, setText] = useState(waText(templates[0]?.text ?? ""))
 
   function choose(i: number) {
     setPicked(i)
-    setText(templates[i].text)
+    setText(waText(templates[i].text))
   }
 
   return (
