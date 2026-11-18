@@ -40,6 +40,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@csstools/postcss-cascade-layers": "^6.0.2",
     "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^3.0.0",
@@ -52,11 +53,20 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
+    "postcss-media-minmax": "^5.0.0",
     "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.3"
   },
-  "packageManager": "pnpm@10.33.4"
+  "packageManager": "pnpm@10.33.4",
+  "browserslist": [
+    "chrome >= 80",
+    "and_chr >= 80",
+    "samsung >= 12",
+    "safari >= 13",
+    "ios_saf >= 13",
+    "firefox >= 78"
+  ]
 }

@@ -474,3 +474,8 @@ Judgment calls made while building Phase 1 from `SAMITI_SPEC.md`. Newest steps a
 
 - সমিতির অনুরোধে WhatsApp-এ যাওয়া সব মেসেজে সংখ্যা ইংরেজিতে (৳1,500, 07/11/2026, নভেম্বর 2026)। অ্যাপের পাতাগুলোতে আগের মতোই বাংলা সংখ্যা।
 - এক জায়গায় করা: `waText()` (`lib/whatsapp.ts`) — `waLink` (সব wa.me বোতাম), গ্রুপে কপি, রসিদ PDF শেয়ারের লেখা, আর সদস্য পাতার মেসেজ বাক্স (যা দেখাবে তা-ই যাবে)। নতুন মেসেজ যোগ করলেও আলাদা কিছু করতে হবে না। অ্যাপের ভেতরের নোটিফিকেশন বাংলা সংখ্যাতেই।
+
+## পুরনো ফোনেও চলা (১৮ নভেম্বর ২০২৬)
+
+- কিছু সদস্যের ফোনে অ্যাপ খুলছিল না; সার্ভারে কোনো এরর ছিল না (Vercel, ৭ দিন)। কারণ: Next.js 16 আর Tailwind 4 ডিফল্টে শুধু Chrome 111+ / Safari 16.4+ ধরে লেখে — Tailwind পুরো CSS "cascade layers" (`@layer`) আর নতুন `@media (width >= …)` লেখায় দেয়, যা পুরনো ফোনের ব্রাউজার (Chrome 99/104-এর আগে, Samsung Internet 18-এর আগে, iOS 15.4-এর আগে) পুরোটাই উপেক্ষা করে — পাতা ফাঁকা বা ভাঙা দেখায়।
+- সমাধান: `postcss.config.mjs`-এ Tailwind-এর পরে `@csstools/postcss-cascade-layers` (layer সমান করে, নির্দিষ্টতা ঠিক রেখে) আর `postcss-media-minmax` (`min-width`-এ রূপান্তর); `package.json`-এ browserslist Chrome/Android Chrome 80+, Samsung 12+, Safari/iOS 13+, Firefox 78+ — JavaScript-ও সেই অনুযায়ী পুরনো সিনট্যাক্সে বানানো হয়। নতুন ব্রাউজারে দেখতে হুবহু আগের মতো (ফোন ও ল্যাপটপ মিলিয়ে দেখা)।
